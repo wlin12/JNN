@@ -1,0 +1,7 @@
+This is a JAVA toolkit for building neural networks. You can build any architecture with it from scratch or use any prebuilt architectures (MLP, RNN, LSTM, BLSTM, Conv->Maxpool). 
+
+To build you need to add the following libraries (Tested using the Jblas bundles)
+ND4J -> http://nd4j.org/downloads.html (add all .jar in libs/)
+DL4J -> http://deeplearning4j.org/download.html (add all .jar in libs/)
+
+Still undocumented for instrutions just mail me (wanglin1122@gmail.com)
