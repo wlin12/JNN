@@ -10,19 +10,21 @@ public class OutputMappingStringToDense extends Mapping{
 	DenseNeuronArray output;
 	StringToDenseTransform layer;
 
-	public OutputMappingStringToDense(
+	public OutputMappingStringToDense(String input,
 			int outputStart, int outputEnd,
 			DenseNeuronArray output, StringToDenseTransform layer) {
 		super(0, 0, outputStart, outputEnd);		
 		this.output = output;
 		this.layer = layer;
+		this.input = input;
 		setTimedLayer(layer);
 	}
 	
-	public OutputMappingStringToDense(DenseNeuronArray output, StringToDenseTransform layer) {
+	public OutputMappingStringToDense(String input, DenseNeuronArray output, StringToDenseTransform layer) {
 		super(0, 0, 0, output.size-1);
 		this.output = output;
 		this.layer = layer;
+		this.input = input;
 	}
 
 	@Override

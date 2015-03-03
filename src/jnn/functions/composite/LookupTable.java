@@ -25,9 +25,9 @@ import vocab.VocabWithHuffmanTree;
 import vocab.WordEntry;
 
 public class LookupTable extends Layer implements SparseToDenseTransform, StringToDenseTransform{
-	
+
 	private static String OUTPUT_KEY = "output";
-	
+
 	SparseFullyConnectedLayer inputToDenseLayer;
 	VocabWithHuffmanTree vocab;
 	int vocabSize;
@@ -37,7 +37,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 
 	ArrayList<DenseFullyConnectedLayer> hiddenLayers = new ArrayList<DenseFullyConnectedLayer>();
 	ArrayList<Integer> hiddenLayersDim = new ArrayList<Integer>();
-		
+
 	public LookupTable(VocabWithHuffmanTree vocab, int outputDim) {
 		super();
 		this.vocabSize = vocab.getTypes();
@@ -45,7 +45,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		this.outputDim = outputDim;
 		inputToDenseLayer = new SparseFullyConnectedLayer(vocabSize, outputDim);
 	}
-	
+
 	public LookupTable(VocabWithHuffmanTree vocab, int outputDim, SparseFullyConnectedLayer inputLayer, ArrayList<DenseFullyConnectedLayer> hiddenLayers, ArrayList<Integer> hiddenLayersDim) {
 		super();
 		this.vocabSize = vocab.getTypes();
@@ -55,11 +55,11 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		this.hiddenLayers = hiddenLayers;
 		this.hiddenLayersDim = hiddenLayersDim;
 	}
-	
+
 	public void initialize(double[][] vals){
 		inputToDenseLayer.initialize(vals);
 	}
-	
+
 	public LookupTable addHidden(int size){
 		int outDim = outputDim;
 		if(hiddenLayersDim.size() > 0){
@@ -76,11 +76,11 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		LookupTable newTable = new LookupTable(vocab, outputDim, inputToDenseLayer, hiddenLayers, hiddenLayersDim);
 		return newTable;
 	}
-	
+
 	public INDArray getWeights(int word){
 		return inputToDenseLayer.getWeight(word);
 	}
-	
+
 	public void buildNetwork(SparseNeuronArray input, int inputStart, int inputEnd, DenseNeuronArray output, int outputStart, int outputEnd,
 			Mapping mapping){
 		TreeInference inference = mapping.getSubInference();
@@ -89,20 +89,20 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		DenseNeuronArray current = new DenseNeuronArray(outputDim); 
 		current.setName("dense word array 1");
 		inference.addNeurons(current);
-		
+
 		inference.addMapping(new OutputMappingSparseToDense(inputStart, inputEnd, 0, outputDim-1, input, current, inputToDenseLayer));
-		
+
 		for(int i = 0; i < hiddenLayers.size(); i++){
 			DenseNeuronArray next = new DenseNeuronArray(hiddenLayersDim.get(i));
 			inference.addNeurons(next);
 			inference.addMapping(new OutputMappingDenseToDense(current, next, hiddenLayers.get(i)));
-			
+
 			current = next;
 			current.setName("dense word array " + (i+2));
 		}
-		
+
 		mapping.setForwardParam(OUTPUT_KEY, current);
-		
+
 		inference.init();
 		inference.forward();
 		for(int d = 0; d < current.size; d++){				
@@ -119,7 +119,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		inputNeurons.addNeuron(word.getId(), 1);
 		buildNetwork(inputNeurons, 0, vocabSize-1, output, outputStart, outputEnd, mapping);
 	}
-	
+
 	@Override
 	public void forward(SparseNeuronArray input, int inputStart, int inputEnd,
 			DenseNeuronArray output, int outputStart, int outputEnd,
@@ -136,25 +136,25 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		for(int d = 0; d < current.size; d++){	
 			current.addError(d, output.getError(d+outputStart));
 		}
-		
+
 		inference.backward();
 	}
-	
+
 	@Override
 	public void backward(SparseNeuronArray input, int inputStart, int inputEnd,
 			DenseNeuronArray output, int outputStart, int outputEnd,
 			OutputMappingSparseToDense mapping) {
-		
+
 		TreeInference inference = mapping.getSubInference();
 		DenseNeuronArray current = (DenseNeuronArray)mapping.getForwardParam(OUTPUT_KEY);		
 
 		for(int d = 0; d < current.size; d++){	
 			current.addError(d, output.getError(d+outputStart));
 		}
-		
+
 		inference.backward();
 	}	
-	
+
 	@Override
 	public void updateWeights(double learningRate, double momentum) {
 		if(keysToUpdate == null){
@@ -167,15 +167,15 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 			hiddenLayer.updateWeights(learningRate, momentum);
 		}
 	}
-	
+
 	public void setPretrainedWeight(int word, double[] weights, boolean addRandomNoise){
 		inputToDenseLayer.setRegularizeWeights(word, weights, addRandomNoise);
 	}
-	
+
 	public void setPretrainedWeight(int word, double[] weights){		
 		setPretrainedWeight(word, weights, true);
 	}
-	
+
 	public void minCountToUpdate(int minCount) {
 		if(minCount == 0){
 			keysToUpdate = null;
@@ -191,21 +191,21 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 			}
 		}
 	}
-	
+
 	public void save(PrintStream out){
 		vocab.saveVocab(out);
 		out.println(outputDim);
 		out.println(minCountToUpdate);
 		inputToDenseLayer.save(out);
-		
+
 		out.println(hiddenLayers.size());
 		for(int i = 0; i < hiddenLayers.size(); i++){
 			out.println(hiddenLayersDim.get(i));
 			hiddenLayers.get(i).save(out);
 		}
-		
+
 	}
-	
+
 	public static LookupTable load(BufferedReader in){
 		try{
 			VocabWithHuffmanTree vocab = VocabWithHuffmanTree.loadVocab(in);
@@ -214,7 +214,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 			LookupTable table = new LookupTable(vocab, outputDim);
 			table.inputToDenseLayer = SparseFullyConnectedLayer.load(in);
 			table.minCountToUpdate(minCountToUpdate);
-			
+
 			int hiddenLayerNumber = Integer.parseInt(in.readLine());
 			for(int i = 0; i < hiddenLayerNumber; i++){
 				int hiddenSize = Integer.parseInt(in.readLine());
@@ -222,17 +222,17 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 				DenseFullyConnectedLayer hidden = DenseFullyConnectedLayer.load(in);
 				table.hiddenLayers.add(hidden);
 			}
-			
+
 			return table;
 		} catch(Exception e){
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public static void main(String[] args){
 		testSaveLoad();
 	}
-	
+
 	public static void testSaveLoad(){
 		VocabWithHuffmanTree vocab = new VocabWithHuffmanTree();
 		vocab.addWordToVocab("hello");
@@ -240,16 +240,31 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		vocab.addWordToVocab("!");
 		vocab.sortVocabByCount();
 		vocab.generateHuffmanCodes();
-		
+
 		LookupTable table = new LookupTable(vocab, 10);
 		table=table.addHidden(20);
 		table=table.addHidden(30);
 		System.err.println("original table");
 		table.save(System.err);
 		table.save(IOUtils.getPrintStream("/tmp/file"));
-			
+
 		System.err.println("loaded table");
 		LookupTable loadedTable = LookupTable.load(IOUtils.getReader("/tmp/file"));
 		loadedTable.save(System.err);
+
+		String word = "hello";
+		for(int i = 0; i < 10; i++){
+			TreeInference inference = new TreeInference(0);
+			DenseNeuronArray projection = new DenseNeuronArray(30);
+			inference.addNeurons(1,projection);
+			inference.addMapping(new OutputMappingStringToDense(word,projection, table));
+			inference.init();
+			inference.forward();
+
+			projection.addError(0, 1 - projection.getNeuron(0));
+			inference.backward();
+			inference.commit(0);
+			System.err.println(projection);
+		}
 	}
 }

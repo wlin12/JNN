@@ -52,13 +52,15 @@ public class TreeInference {
 		NeuronArray[] outputArray = map.getOutputArray();
 
 		int inputLevel = 0;
-		for(NeuronArray input : inputArray){
-			if(input!= null && !neuronsToLevel.containsKey(input)){
-				throw new RuntimeException("input neurons does do not exist for mapping ");			
+		if(inputArray != null){
+			for(NeuronArray input : inputArray){
+				if(input!= null && !neuronsToLevel.containsKey(input)){
+					throw new RuntimeException("input neurons does do not exist for mapping ");			
+				}
+				if(input!=null){
+					inputLevel = Math.max(neuronsToLevel.get(input), inputLevel); 
+				}			
 			}
-			if(input!=null){
-				inputLevel = Math.max(neuronsToLevel.get(input), inputLevel); 
-			}			
 		}
 
 		int outputLevel = Integer.MAX_VALUE;
@@ -94,7 +96,7 @@ public class TreeInference {
 	public void addNeurons(NeuronArray neurons){
 		addNeurons(getMaxLevel()+1, neurons);
 	}
-	
+
 	public void addNeurons(DenseNeuronArray[] neurons){
 		int level = getMaxLevel() + 1;
 		for(DenseNeuronArray n : neurons){			
@@ -135,9 +137,11 @@ public class TreeInference {
 		return System.currentTimeMillis() - time;
 	}
 
-	public void forwardLevel(int level){		
-		for(NeuronArray neurons : outputsPerLevel.get(level)){
-			neurons.beforeForward();
+	public void forwardLevel(int level){
+		if(outputsPerLevel.containsKey(level)){
+			for(NeuronArray neurons : outputsPerLevel.get(level)){
+				neurons.beforeForward();
+			}
 		}
 		for(Mapping map : mappingsPerSourceLevel.get(level)){
 			map.timedForward();
