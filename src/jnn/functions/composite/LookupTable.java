@@ -1,5 +1,7 @@
 package jnn.functions.composite;
 
+import java.io.BufferedReader;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -18,6 +20,7 @@ import jnn.training.TreeInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import util.IOUtils;
 import vocab.VocabWithHuffmanTree;
 import vocab.WordEntry;
 
@@ -189,4 +192,64 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		}
 	}
 	
+	public void save(PrintStream out){
+		vocab.saveVocab(out);
+		out.println(outputDim);
+		out.println(minCountToUpdate);
+		inputToDenseLayer.save(out);
+		
+		out.println(hiddenLayers.size());
+		for(int i = 0; i < hiddenLayers.size(); i++){
+			out.println(hiddenLayersDim.get(i));
+			hiddenLayers.get(i).save(out);
+		}
+		
+	}
+	
+	public static LookupTable load(BufferedReader in){
+		try{
+			VocabWithHuffmanTree vocab = VocabWithHuffmanTree.loadVocab(in);
+			int outputDim = Integer.parseInt(in.readLine());
+			int minCountToUpdate = Integer.parseInt(in.readLine());
+			LookupTable table = new LookupTable(vocab, outputDim);
+			table.inputToDenseLayer = SparseFullyConnectedLayer.load(in);
+			table.minCountToUpdate(minCountToUpdate);
+			
+			int hiddenLayerNumber = Integer.parseInt(in.readLine());
+			for(int i = 0; i < hiddenLayerNumber; i++){
+				int hiddenSize = Integer.parseInt(in.readLine());
+				table.hiddenLayersDim.add(hiddenSize);
+				DenseFullyConnectedLayer hidden = DenseFullyConnectedLayer.load(in);
+				table.hiddenLayers.add(hidden);
+			}
+			
+			return table;
+		} catch(Exception e){
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public static void main(String[] args){
+		testSaveLoad();
+	}
+	
+	public static void testSaveLoad(){
+		VocabWithHuffmanTree vocab = new VocabWithHuffmanTree();
+		vocab.addWordToVocab("hello");
+		vocab.addWordToVocab("world");
+		vocab.addWordToVocab("!");
+		vocab.sortVocabByCount();
+		vocab.generateHuffmanCodes();
+		
+		LookupTable table = new LookupTable(vocab, 10);
+		table=table.addHidden(20);
+		table=table.addHidden(30);
+		System.err.println("original table");
+		table.save(System.err);
+		table.save(IOUtils.getPrintStream("/tmp/file"));
+			
+		System.err.println("loaded table");
+		LookupTable loadedTable = LookupTable.load(IOUtils.getReader("/tmp/file"));
+		loadedTable.save(System.err);
+	}
 }

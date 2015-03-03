@@ -136,12 +136,26 @@ public class SerializeUtils {
 		}
 		return ret;
 	}
+	
+	public static int[] loadIntArray(BufferedReader in){
+		try {
+			int dim = Integer.parseInt(in.readLine());
+			String[] vals = in.readLine().split("\\s+");
+			int[] ret = new int[dim];
+			for(int i = 0; i < ret.length; i++){
+				ret[i] = Integer.parseInt(vals[i]);
+			}
+			return ret;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	public static boolean[] loadBooleanArray(BufferedReader in){
 		try {
 			int dim = Integer.parseInt(in.readLine());
 			String[] vals = in.readLine().split("\\s+");
-			boolean[] ret = new boolean[vals.length];
+			boolean[] ret = new boolean[dim];
 			for(int i = 0; i < ret.length; i++){
 				ret[i] = Boolean.parseBoolean(vals[i]);
 			}

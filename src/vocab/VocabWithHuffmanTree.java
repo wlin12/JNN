@@ -1,4 +1,5 @@
 package vocab;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
@@ -25,7 +26,7 @@ public class VocabWithHuffmanTree {
 
 	HashMap<Integer, Integer> numberOfwordsByLength = new HashMap<Integer, Integer>();
 	int maxLenght = 0;
-	
+
 	AliasMethod sampling;	
 
 	public void loadFromCountFile(String file){
@@ -59,7 +60,22 @@ public class VocabWithHuffmanTree {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
+	public void saveVocab(PrintStream out){
+		try {
+			out.println(tokens);
+			out.println(types);
+			out.println(minOccur);
+			out.println(maxTokens);
+			out.println(maxLenght);
+			for(WordEntry word : words){
+				word.save(out);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public void saveVocab(String file){
 		try {
 			PrintStream out = new PrintStream(new File(file));
@@ -67,16 +83,16 @@ public class VocabWithHuffmanTree {
 			out.println(types);
 			out.println(minOccur);
 			out.println(maxTokens);
+			out.println(maxLenght);
 			for(WordEntry word : words){
 				word.save(out);
 			}
 			out.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			System.exit(0);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public void loadVocab(String file){
 		Scanner reader;
 		try {
@@ -93,6 +109,25 @@ public class VocabWithHuffmanTree {
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static VocabWithHuffmanTree loadVocab(BufferedReader in){
+		try {
+			VocabWithHuffmanTree vocab = new VocabWithHuffmanTree();
+			vocab.tokens = Integer.parseInt(in.readLine());
+			vocab.types = Integer.parseInt(in.readLine());
+			vocab.minOccur = Integer.parseInt(in.readLine());
+			vocab.maxTokens = Integer.parseInt(in.readLine());
+			vocab.maxLenght = Integer.parseInt(in.readLine());
+			for(int i = 0; i < vocab.types; i++){
+				WordEntry wordEntry = WordEntry.load(in);
+				vocab.words.add(wordEntry);
+				vocab.hash.put(wordEntry.word, wordEntry);
+			}
+			return vocab;
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -123,7 +158,7 @@ public class VocabWithHuffmanTree {
 		wordObj.count+=count;
 		tokens+=count;
 	}	
-	
+
 	public void reduceVocab(){
 		ArrayList<WordEntry> toAdd = new ArrayList<WordEntry>();
 		final WordEntry eof = hash.get(EOS);
@@ -371,7 +406,7 @@ public class VocabWithHuffmanTree {
 			System.err.println(i + ":" + getEntryFromId(i));
 		}
 	}
-	
+
 	public String genNewWord(){
 		String ret = "thiswordismineallllllllllmine";
 		while(hash.containsKey(ret)){
@@ -383,7 +418,7 @@ public class VocabWithHuffmanTree {
 	public WordEntry getRandomEntry() {
 		return words.get((int)(Math.random() * getTypes()));
 	}
-	
+
 	public WordEntry getRandomEntryByCount() {
 		if(sampling == null){
 			LinkedList<Double> wordCounts = new LinkedList<Double>();

@@ -3,7 +3,6 @@ package jnn.objective;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
 
 public class HierarchicalSoftmaxObjective implements Objective{

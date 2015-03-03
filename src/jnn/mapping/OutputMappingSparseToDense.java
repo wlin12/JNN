@@ -1,6 +1,5 @@
 package jnn.mapping;
 
-import jnn.functions.DenseToDenseTransform;
 import jnn.functions.SparseToDenseTransform;
 import jnn.functions.parametrized.Layer;
 import jnn.neuron.DenseNeuronArray;
