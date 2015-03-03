@@ -21,7 +21,7 @@ import jnn.training.TreeInference;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import util.IOUtils;
-import vocab.VocabWithHuffmanTree;
+import vocab.Vocab;
 import vocab.WordEntry;
 
 public class LookupTable extends Layer implements SparseToDenseTransform, StringToDenseTransform{
@@ -29,7 +29,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 	private static String OUTPUT_KEY = "output";
 
 	SparseFullyConnectedLayer inputToDenseLayer;
-	VocabWithHuffmanTree vocab;
+	Vocab vocab;
 	int vocabSize;
 	int outputDim;
 	int minCountToUpdate = 0;
@@ -38,7 +38,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 	ArrayList<DenseFullyConnectedLayer> hiddenLayers = new ArrayList<DenseFullyConnectedLayer>();
 	ArrayList<Integer> hiddenLayersDim = new ArrayList<Integer>();
 
-	public LookupTable(VocabWithHuffmanTree vocab, int outputDim) {
+	public LookupTable(Vocab vocab, int outputDim) {
 		super();
 		this.vocabSize = vocab.getTypes();
 		this.vocab = vocab;
@@ -46,7 +46,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 		inputToDenseLayer = new SparseFullyConnectedLayer(vocabSize, outputDim);
 	}
 
-	public LookupTable(VocabWithHuffmanTree vocab, int outputDim, SparseFullyConnectedLayer inputLayer, ArrayList<DenseFullyConnectedLayer> hiddenLayers, ArrayList<Integer> hiddenLayersDim) {
+	public LookupTable(Vocab vocab, int outputDim, SparseFullyConnectedLayer inputLayer, ArrayList<DenseFullyConnectedLayer> hiddenLayers, ArrayList<Integer> hiddenLayersDim) {
 		super();
 		this.vocabSize = vocab.getTypes();
 		this.vocab = vocab;
@@ -208,7 +208,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 
 	public static LookupTable load(BufferedReader in){
 		try{
-			VocabWithHuffmanTree vocab = VocabWithHuffmanTree.loadVocab(in);
+			Vocab vocab = Vocab.loadVocab(in);
 			int outputDim = Integer.parseInt(in.readLine());
 			int minCountToUpdate = Integer.parseInt(in.readLine());
 			LookupTable table = new LookupTable(vocab, outputDim);
@@ -234,7 +234,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 	}
 
 	public static void testSaveLoad(){
-		VocabWithHuffmanTree vocab = new VocabWithHuffmanTree();
+		Vocab vocab = new Vocab();
 		vocab.addWordToVocab("hello");
 		vocab.addWordToVocab("world");
 		vocab.addWordToVocab("!");

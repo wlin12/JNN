@@ -1,15 +1,6 @@
-package jnn.features;
+package jnn.training;
 
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Scanner;
-
-import util.PrintUtils;
-import util.RandomUtils;
-import util.SerializeUtils;
-
-public class FeatureVector {
+public class GlobalParameters {
 
 
 	public static double learningRateDefault = 0.05;

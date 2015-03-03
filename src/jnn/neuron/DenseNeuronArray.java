@@ -1,6 +1,6 @@
 package jnn.neuron;
 
-import jnn.features.FeatureVector;
+import jnn.training.GlobalParameters;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -202,7 +202,7 @@ public class DenseNeuronArray extends NeuronArray{
 	
 	@Override
 	public void beforeBackward() {
-		INDArrayUtils.capValues(error, -FeatureVector.maxError, FeatureVector.maxError);
+		INDArrayUtils.capValues(error, -GlobalParameters.maxError, GlobalParameters.maxError);
 	}	
 }
 

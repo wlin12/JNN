@@ -1,6 +1,5 @@
 package jnn.functions.composite;
 
-import jnn.features.FeatureVector;
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
@@ -14,6 +13,7 @@ import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
+import jnn.training.GlobalParameters;
 import jnn.training.TreeInference;
 import util.PrintUtils;
 import util.RandomUtils;
@@ -447,8 +447,8 @@ public class LongShortTermMemoryRNNVariableState extends RNN implements DenseArr
 		int inputDim = 50;
 		int instances = 1000;
 		double learningRate = 0.1;
-		FeatureVector.useAdagradDefault = true;
-		FeatureVector.commitMethodDefault = 0;
+		GlobalParameters.useAdagradDefault = true;
+		GlobalParameters.commitMethodDefault = 0;
 		LongShortTermMemoryRNNVariableState recNN = new LongShortTermMemoryRNNVariableState(inputDim, stateDim, stateDim);
 
 		int len = 5;

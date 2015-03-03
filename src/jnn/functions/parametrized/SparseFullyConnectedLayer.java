@@ -6,12 +6,12 @@ import java.util.HashSet;
 import java.util.Map.Entry;
 
 import jnn.features.DenseRowFeatureMatrix;
-import jnn.features.FeatureVector;
 import jnn.functions.SparseToDenseTransform;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.mapping.OutputMappingSparseToDense;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
+import jnn.training.GlobalParameters;
 import jnn.training.TreeInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,7 +40,7 @@ public class SparseFullyConnectedLayer extends Layer implements SparseToDenseTra
 	}
 
 	public void initialize(boolean sigmoid, boolean tanh){
-		if(FeatureVector.initializationType == 0){
+		if(GlobalParameters.initializationType == 0){
 			initializeUniform();
 		}
 		else {
@@ -155,8 +155,8 @@ public class SparseFullyConnectedLayer extends Layer implements SparseToDenseTra
 	}
 	
 	public static void test1(){
-		FeatureVector.useAdadeltaDefault = true;
-		FeatureVector.l2regularizerLambdaDefault = 0.000;
+		GlobalParameters.useAdadeltaDefault = true;
+		GlobalParameters.l2regularizerLambdaDefault = 0.000;
 		TreeInference inference = new TreeInference(0);
 
 		SparseFullyConnectedLayer layer = new SparseFullyConnectedLayer(3, 5);

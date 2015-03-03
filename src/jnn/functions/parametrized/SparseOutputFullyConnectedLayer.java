@@ -3,13 +3,13 @@ package jnn.functions.parametrized;
 import java.util.Map.Entry;
 
 import jnn.features.DenseRowFeatureMatrix;
-import jnn.features.FeatureVector;
 import jnn.functions.DenseToSparseTransform;
 import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.mapping.OutputMappingDenseToSparse;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
+import jnn.training.GlobalParameters;
 import jnn.training.TreeInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,7 +39,7 @@ public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSpa
 	}
 
 	public void initialize(boolean sigmoid, boolean tanh){
-		if(FeatureVector.initializationType == 0){
+		if(GlobalParameters.initializationType == 0){
 			initializeUniform();
 		}
 		else {

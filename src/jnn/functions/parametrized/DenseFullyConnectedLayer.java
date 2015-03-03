@@ -5,10 +5,10 @@ import java.io.PrintStream;
 
 import jnn.features.DenseFeatureMatrix;
 import jnn.features.DenseFeatureVector;
-import jnn.features.FeatureVector;
 import jnn.functions.DenseToDenseTransform;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
+import jnn.training.GlobalParameters;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -19,7 +19,7 @@ public class DenseFullyConnectedLayer extends Layer implements DenseToDenseTrans
 	public int outputDim;
 	public DenseFeatureMatrix weights;
 	public DenseFeatureVector bias;
-	public boolean addNoise = FeatureVector.addNoiseDefault;
+	public boolean addNoise = GlobalParameters.addNoiseDefault;
 	public boolean useBias = true;
 
 	public DenseFullyConnectedLayer(int inputDim, int outputDim) {
@@ -33,7 +33,7 @@ public class DenseFullyConnectedLayer extends Layer implements DenseToDenseTrans
 	}
 
 	public void initialize(boolean sigmoid, boolean tanh){
-		if(FeatureVector.initializationType == 0){
+		if(GlobalParameters.initializationType == 0){
 			initializeUniform();
 		}
 		else {

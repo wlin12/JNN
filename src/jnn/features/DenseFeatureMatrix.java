@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
 
+import jnn.training.GlobalParameters;
+
 import org.apache.commons.math.util.FastMath;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -23,34 +25,34 @@ public class DenseFeatureMatrix {
 	INDArray features;
 	INDArray featuresT;
 	GradientStore gradientStore = new GradientStore();
-	double l2 = FeatureVector.l2regularizerLambdaDefault;
-	double learningRate = FeatureVector.learningRateDefault;
+	double l2 = GlobalParameters.l2regularizerLambdaDefault;
+	double learningRate = GlobalParameters.learningRateDefault;
 
 	//adagrad vars
-	boolean useAdagrad = FeatureVector.useAdagradDefault;
+	boolean useAdagrad = GlobalParameters.useAdagradDefault;
 	INDArray adagradQuotient;
 	double adagradEps = 0.001;
 	double adagradMax = 10;
 
 	//gaussian noise
-	double noiseVar = FeatureVector.noiseDevDefault;
+	double noiseVar = GlobalParameters.noiseDevDefault;
 	double noiseVarSqrt = FastMath.sqrt(noiseVar);;
 	HashMap<Integer,INDArray> currentNoise = new HashMap<Integer, INDArray>();
 
 	//momentum vars
-	boolean useMomentum = FeatureVector.useMomentumDefault;
+	boolean useMomentum = GlobalParameters.useMomentumDefault;
 	INDArray momentumPrevUpdate;
-	double momentum = FeatureVector.momentumDefault;
+	double momentum = GlobalParameters.momentumDefault;
 
 	//adadelta vars
-	boolean useAdadelta = FeatureVector.useAdadeltaDefault;
+	boolean useAdadelta = GlobalParameters.useAdadeltaDefault;
 	INDArray adadeltaRMSGradient;
 	INDArray adadeltaRMSUpdate;
-	double adadeltaMomentum = FeatureVector.adadeltaMomentumDefault;	
-	double adadeltaEps = FeatureVector.adadeltaEpsDefault;
+	double adadeltaMomentum = GlobalParameters.adadeltaMomentumDefault;	
+	double adadeltaEps = GlobalParameters.adadeltaEpsDefault;
 
 	//commit
-	int commitMethod = FeatureVector.commitMethodDefault;
+	int commitMethod = GlobalParameters.commitMethodDefault;
 
 	public DenseFeatureMatrix(int inputSize, int outputSize) {
 		if(inputSize == 1){
@@ -138,7 +140,7 @@ public class DenseFeatureMatrix {
 		else{
 			features.addi(gradientL2.mul(learningRate));			
 		}
-		capValues(FeatureVector.maxVal);
+		capValues(GlobalParameters.maxVal);
 		featuresT = features.transpose();
 		gradientStore.init();
 	}

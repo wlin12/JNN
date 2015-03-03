@@ -2,13 +2,13 @@ package jnn.functions.composite;
 
 import jnn.features.DenseFeatureMatrix;
 import jnn.features.DenseFeatureVector;
-import jnn.features.FeatureVector;
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
 import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.neuron.DenseNeuronArray;
+import jnn.training.GlobalParameters;
 import jnn.training.TreeInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -154,8 +154,8 @@ public class ConvolutionLayer extends RNN implements DenseArrayToDenseTransform,
 		int inputDim = 50;
 		int instances = 1000;
 		double learningRate = 0.1;
-		FeatureVector.useAdagradDefault = true;
-		FeatureVector.commitMethodDefault = 0;
+		GlobalParameters.useAdagradDefault = true;
+		GlobalParameters.commitMethodDefault = 0;
 		ConvolutionLayer recNN = new ConvolutionLayer(5, inputDim, stateDim);
 
 		int len = 5;

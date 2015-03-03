@@ -13,7 +13,7 @@ import java.util.Map.Entry;
 
 import util.AliasMethod;
 
-public class VocabWithHuffmanTree {
+public class Vocab {
 
 	public final static String EOS = "</s>";
 	public final static int MAXCODELEN = 100;
@@ -113,9 +113,9 @@ public class VocabWithHuffmanTree {
 		}
 	}
 
-	public static VocabWithHuffmanTree loadVocab(BufferedReader in){
+	public static Vocab loadVocab(BufferedReader in){
 		try {
-			VocabWithHuffmanTree vocab = new VocabWithHuffmanTree();
+			Vocab vocab = new Vocab();
 			vocab.tokens = Integer.parseInt(in.readLine());
 			vocab.types = Integer.parseInt(in.readLine());
 			vocab.minOccur = Integer.parseInt(in.readLine());
@@ -358,7 +358,7 @@ public class VocabWithHuffmanTree {
 		return tokens;
 	}
 
-	public void learnCharacterVocabFromWordVocab(VocabWithHuffmanTree wordVocab){
+	public void learnCharacterVocabFromWordVocab(Vocab wordVocab){
 		addWordToVocab(EOS);
 		for(WordEntry word : wordVocab.words){
 			for(char c : word.word.toCharArray()){

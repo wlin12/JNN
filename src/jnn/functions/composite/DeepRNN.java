@@ -2,13 +2,13 @@ package jnn.functions.composite;
 
 import java.util.ArrayList;
 
-import jnn.features.FeatureVector;
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
 import jnn.functions.parametrized.Layer;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.neuron.DenseNeuronArray;
+import jnn.training.GlobalParameters;
 import jnn.training.TreeInference;
 import util.PrintUtils;
 import util.RandomUtils;
@@ -243,8 +243,8 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 		int inputDim = 50;
 		int instances = 1000;
 		double learningRate = 0.1;
-		FeatureVector.useAdagradDefault = true;
-		FeatureVector.commitMethodDefault = 0;
+		GlobalParameters.useAdagradDefault = true;
+		GlobalParameters.commitMethodDefault = 0;
 		DeepRNN recNN = new DeepRNN(inputDim);
 		recNN = recNN.addLayer(stateDim, stateDim);
 		recNN = recNN.addLayer(stateDim, stateDim);
