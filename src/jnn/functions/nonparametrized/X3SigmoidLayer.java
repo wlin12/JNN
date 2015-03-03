@@ -9,7 +9,6 @@ import jnn.mapping.OutputMappingDenseToDense;
 import jnn.mapping.OutputMappingSparseToSparse;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
-import util.TanFuncs;
 
 public class X3SigmoidLayer extends Layer implements DenseToDenseTransform, SparseToSparseTransform{
 	

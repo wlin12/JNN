@@ -5,21 +5,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
 
-import opennlp.tools.util.featuregen.PreviousMapFeatureGenerator;
-
 import org.apache.commons.math.util.FastMath;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.sampling.Sampling;
-
-import com.hazelcast.nio.IOUtil;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import util.INDArrayUtils;
 import util.IOUtils;

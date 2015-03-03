@@ -1,12 +1,6 @@
 package jnn.functions.composite;
 
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Scanner;
-
 import jnn.functions.DenseArrayToDenseArrayTransform;
-import jnn.functions.DenseArrayToDenseTransform;
-import jnn.functions.DenseToDenseTransform;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
 import jnn.functions.nonparametrized.TanSigmoidLayer;
 import jnn.functions.parametrized.CopyLayer;
@@ -18,11 +12,8 @@ import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.mapping.OutputMappingDenseToDense;
-import jnn.mapping.OutputMappingVoidToDense;
 import jnn.neuron.DenseNeuronArray;
 import jnn.training.TreeInference;
-import util.PrintUtils;
-import util.RandomUtils;
 
 public class SequentialLSTM extends Layer implements DenseArrayToDenseArrayTransform{
 

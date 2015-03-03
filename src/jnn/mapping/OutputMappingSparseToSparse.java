@@ -2,7 +2,6 @@ package jnn.mapping;
 
 import jnn.functions.SparseToSparseTransform;
 import jnn.functions.parametrized.Layer;
-import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.NeuronArray;
 import jnn.neuron.SparseNeuronArray;
 

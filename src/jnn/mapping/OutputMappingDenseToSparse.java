@@ -1,11 +1,6 @@
 package jnn.mapping;
 
-import java.util.ArrayList;
-import java.util.Set;
-
-import jnn.functions.DenseToDenseTransform;
 import jnn.functions.DenseToSparseTransform;
-import jnn.functions.SparseToDenseTransform;
 import jnn.functions.parametrized.Layer;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.NeuronArray;

@@ -12,11 +12,8 @@ import jnn.neuron.SparseNeuronArray;
 
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Sigmoid;
-import org.nd4j.linalg.api.activation.Tanh;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import util.ExpTable;
-import util.TanFuncs;
 
 public class LogisticSigmoidLayer extends Layer implements DenseToDenseTransform, SparseToSparseTransform{
 	

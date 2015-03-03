@@ -1,13 +1,7 @@
 package jnn.functions.parametrized;
 
-import java.io.PrintStream;
-import java.util.Scanner;
-
 import jnn.features.DenseFeatureVector;
-import jnn.features.FeatureVector;
-import jnn.functions.DenseToDenseTransform;
 import jnn.functions.VoidToDenseTransform;
-import jnn.mapping.OutputMappingDenseToDense;
 import jnn.mapping.OutputMappingVoidToDense;
 import jnn.neuron.DenseNeuronArray;
 

@@ -2,25 +2,26 @@ package jnn.functions.composite;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 
 import jnn.functions.SparseToDenseTransform;
+import jnn.functions.StringToDenseTransform;
 import jnn.functions.parametrized.DenseFullyConnectedLayer;
 import jnn.functions.parametrized.Layer;
 import jnn.functions.parametrized.SparseFullyConnectedLayer;
+import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.mapping.OutputMappingSparseToDense;
+import jnn.mapping.OutputMappingStringToDense;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
 import jnn.training.TreeInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import util.PrintUtils;
 import vocab.VocabWithHuffmanTree;
 import vocab.WordEntry;
 
-public class LookupTable extends Layer implements SparseToDenseTransform{
+public class LookupTable extends Layer implements SparseToDenseTransform, StringToDenseTransform{
 	
 	private static String OUTPUT_KEY = "output";
 	
@@ -76,11 +77,9 @@ public class LookupTable extends Layer implements SparseToDenseTransform{
 	public INDArray getWeights(int word){
 		return inputToDenseLayer.getWeight(word);
 	}
-
-	@Override
-	public void forward(SparseNeuronArray input, int inputStart, int inputEnd,
-			DenseNeuronArray output, int outputStart, int outputEnd,
-			OutputMappingSparseToDense mapping) {
+	
+	public void buildNetwork(SparseNeuronArray input, int inputStart, int inputEnd, DenseNeuronArray output, int outputStart, int outputEnd,
+			Mapping mapping){
 		TreeInference inference = mapping.getSubInference();
 		inference.addNeurons(0, input);
 
@@ -108,6 +107,36 @@ public class LookupTable extends Layer implements SparseToDenseTransform{
 		}
 	}
 
+	@Override
+	public void forward(String input, DenseNeuronArray output, int outputStart,
+			int outputEnd, OutputMappingStringToDense mapping) {
+		WordEntry word = vocab.getEntry(input);
+		if(word==null){throw new RuntimeException("unknown forward");}
+		SparseNeuronArray inputNeurons = new SparseNeuronArray(vocabSize);
+		inputNeurons.addNeuron(word.getId(), 1);
+		buildNetwork(inputNeurons, 0, vocabSize-1, output, outputStart, outputEnd, mapping);
+	}
+	
+	@Override
+	public void forward(SparseNeuronArray input, int inputStart, int inputEnd,
+			DenseNeuronArray output, int outputStart, int outputEnd,
+			OutputMappingSparseToDense mapping) {
+		buildNetwork(input, inputStart, inputEnd, output, outputStart, outputEnd, mapping);
+	}
+
+	@Override
+	public void backward(String input, DenseNeuronArray output,
+			int outputStart, int outputEnd, OutputMappingStringToDense mapping) {
+		TreeInference inference = mapping.getSubInference();
+		DenseNeuronArray current = (DenseNeuronArray)mapping.getForwardParam(OUTPUT_KEY);		
+
+		for(int d = 0; d < current.size; d++){	
+			current.addError(d, output.getError(d+outputStart));
+		}
+		
+		inference.backward();
+	}
+	
 	@Override
 	public void backward(SparseNeuronArray input, int inputStart, int inputEnd,
 			DenseNeuronArray output, int outputStart, int outputEnd,

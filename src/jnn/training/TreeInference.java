@@ -5,21 +5,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
 
-import jnn.functions.DenseToDenseTransform;
 import jnn.functions.SparseToDenseTransform;
-import jnn.functions.nonparametrized.TanSigmoidLayer;
-import jnn.functions.parametrized.CopyLayer;
 import jnn.functions.parametrized.Layer;
-import jnn.functions.parametrized.StaticLayer;
 import jnn.mapping.Mapping;
-import jnn.mapping.OutputMappingDenseToDense;
 import jnn.mapping.OutputMappingSparseToDense;
-import jnn.mapping.OutputMappingVoidToDense;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.NeuronArray;
 import jnn.neuron.SparseNeuronArray;
-import jnn.objective.SoftmaxDenseObjective;
-import vocab.VocabWithHuffmanTree;
 
 public class TreeInference {
 	HashMap<Integer, ArrayList<Mapping>> mappingsPerTargetLevel = new HashMap<Integer, ArrayList<Mapping>>();

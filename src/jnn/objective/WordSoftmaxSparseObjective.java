@@ -2,11 +2,9 @@ package jnn.objective;
 
 import java.util.Map.Entry;
 
-import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
 import util.ExpTable;
 import util.MathUtils;
-import util.PrintUtils;
 
 public class WordSoftmaxSparseObjective {
 

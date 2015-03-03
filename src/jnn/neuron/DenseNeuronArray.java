@@ -1,15 +1,11 @@
 package jnn.neuron;
 
-import java.util.Arrays;
-
 import jnn.features.FeatureVector;
 
-import org.apache.zookeeper.ZooDefs.Ids;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import util.INDArrayUtils;
-import util.IOUtils;
 import util.MathUtils;
 import util.RandomUtils;
 

@@ -1,9 +1,7 @@
 package jnn.objective;
 
-import jnn.functions.DenseToDenseTransform;
 import jnn.neuron.DenseNeuronArray;
 import util.MathUtils;
-import util.PrintUtils;
 
 public class SoftmaxDenseObjective implements Objective{
 	public DenseNeuronArray neurons;

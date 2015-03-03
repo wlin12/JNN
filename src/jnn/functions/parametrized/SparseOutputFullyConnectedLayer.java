@@ -2,7 +2,6 @@ package jnn.functions.parametrized;
 
 import java.util.Map.Entry;
 
-import jnn.features.DenseFeatureVector;
 import jnn.features.DenseRowFeatureMatrix;
 import jnn.features.FeatureVector;
 import jnn.functions.DenseToSparseTransform;

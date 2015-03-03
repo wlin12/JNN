@@ -1,7 +1,6 @@
 package jnn.functions.parametrized;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.PrintStream;
 
 import jnn.features.DenseFeatureMatrix;
@@ -10,12 +9,10 @@ import jnn.features.FeatureVector;
 import jnn.functions.DenseToDenseTransform;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
-import jnn.training.TreeInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import util.IOUtils;
-import util.PrintUtils;
 
 public class DenseFullyConnectedLayer extends Layer implements DenseToDenseTransform{
 	public int inputDim;

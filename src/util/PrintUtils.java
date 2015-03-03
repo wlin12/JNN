@@ -1,8 +1,6 @@
 package util;
 
 import java.io.PrintStream;
-import java.text.DecimalFormat;
-import java.util.LinkedList;
 import java.util.List;
 
 public class PrintUtils {

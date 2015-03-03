@@ -6,7 +6,6 @@ import jnn.features.FeatureVector;
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
 import jnn.functions.parametrized.Layer;
-import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.neuron.DenseNeuronArray;

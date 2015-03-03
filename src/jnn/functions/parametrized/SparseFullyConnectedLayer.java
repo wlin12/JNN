@@ -1,12 +1,10 @@
 package jnn.functions.parametrized;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Map.Entry;
 
-import jnn.features.DenseFeatureVector;
 import jnn.features.DenseRowFeatureMatrix;
 import jnn.features.FeatureVector;
 import jnn.functions.SparseToDenseTransform;
@@ -19,10 +17,7 @@ import jnn.training.TreeInference;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import com.hazelcast.nio.IOUtil;
-
 import util.IOUtils;
-import util.PrintUtils;
 import util.RandomUtils;
 
 public class SparseFullyConnectedLayer extends Layer implements SparseToDenseTransform{

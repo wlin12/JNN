@@ -1,13 +1,9 @@
 package jnn.features;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
-import java.util.Set;
-
-import javax.swing.JFrame;
 
 import util.PrintUtils;
 import util.RandomUtils;

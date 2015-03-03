@@ -1,15 +1,7 @@
 package jnn.objective;
 
-import java.util.Map.Entry;
-
 import jnn.neuron.DenseNeuronArray;
-import jnn.neuron.SparseNeuronArray;
-
-import org.nd4j.linalg.api.ndarray.INDArray;
-
 import util.ExpTable;
-import util.MathUtils;
-import util.PrintUtils;
 
 public class WordSoftmaxDenseObjective {
 

@@ -2,25 +2,12 @@ package jnn.features;
 
 import java.io.BufferedReader;
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.HashSet;
 
-import org.apache.commons.math.util.FastMath;
-import org.apache.commons.math3.distribution.NormalDistribution;
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGrad;
-import org.nd4j.linalg.sampling.Sampling;
 
-import com.hazelcast.nio.IOUtil;
-
-import util.INDArrayUtils;
 import util.IOUtils;
-import util.PrintUtils;
-import util.RandomUtils;
 import util.SerializeUtils;
 
 public class DenseRowFeatureMatrix {

@@ -1,21 +1,12 @@
 package jnn.functions.nonparametrized;
 
-import java.util.Set;
-
 import jnn.functions.DenseToDenseTransform;
-import jnn.functions.SparseToSparseTransform;
 import jnn.functions.parametrized.Layer;
 import jnn.mapping.OutputMappingDenseToDense;
-import jnn.mapping.OutputMappingSparseToSparse;
 import jnn.neuron.DenseNeuronArray;
-import jnn.neuron.SparseNeuronArray;
 
-import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.Exp;
-import org.nd4j.linalg.api.activation.Tanh;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import util.TanFuncs;
 
 public class ExpLayer extends Layer implements DenseToDenseTransform{
 	

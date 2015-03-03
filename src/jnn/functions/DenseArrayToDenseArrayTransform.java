@@ -1,6 +1,5 @@
 package jnn.functions;
 
-import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.neuron.DenseNeuronArray;
 

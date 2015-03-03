@@ -1,7 +1,5 @@
 package jnn.functions;
 
-import java.io.PrintStream;
-
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.neuron.DenseNeuronArray;
 

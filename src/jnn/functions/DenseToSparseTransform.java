@@ -1,7 +1,5 @@
 package jnn.functions;
 
-import java.util.Set;
-
 import jnn.mapping.OutputMappingDenseToSparse;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;

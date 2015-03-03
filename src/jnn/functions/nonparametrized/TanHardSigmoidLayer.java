@@ -12,8 +12,6 @@ import jnn.neuron.SparseNeuronArray;
 
 import org.nd4j.linalg.api.activation.ActivationFunction;
 import org.nd4j.linalg.api.activation.HardTanh;
-import org.nd4j.linalg.api.activation.Tanh;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import util.TanFuncs;
 
