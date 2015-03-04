@@ -4,6 +4,8 @@ import java.util.ArrayList;
 
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
+import jnn.functions.composite.lstm.LSTM;
+import jnn.functions.composite.rnn.RNN;
 import jnn.functions.parametrized.Layer;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
@@ -33,7 +35,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 			newLSTM.hiddenLayers.add(hiddenLayers.get(i));
 		}
 		newLSTM.dims.add(outputDim);
-		newLSTM.hiddenLayers.add(new LongShortTermMemoryRNNVariableState(dims.get(dims.size()-1), stateDim, outputDim));
+		newLSTM.hiddenLayers.add(new LSTM(dims.get(dims.size()-1), stateDim, outputDim));
 		return newLSTM;
 	}
 	
@@ -49,7 +51,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 			rnn = new RNN(dims.get(dims.size()-1), stateDim, outputDim);
 		}
 		else if(type.equals("lstm")){
-			rnn = new LongShortTermMemoryRNNVariableState(dims.get(dims.size()-1), stateDim, outputDim);
+			rnn = new LSTM(dims.get(dims.size()-1), stateDim, outputDim);
 		}
 		else if(type.equals("convolution")){
 			rnn = new ConvolutionLayer(2, dims.get(dims.size()-1), outputDim);
@@ -86,7 +88,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 			rnn = new RNN(dims.get(dims.size()-1), stateDim, outputDim);
 		}
 		else if(type.equals("lstm")){
-			rnn = new LongShortTermMemoryRNNVariableState(dims.get(dims.size()-1), stateDim, outputDim);
+			rnn = new LSTM(dims.get(dims.size()-1), stateDim, outputDim);
 		}
 		else if(type.equals("convolution")){
 			rnn = new ConvolutionLayer(2, dims.get(dims.size()-1), outputDim);

@@ -4,6 +4,7 @@ import jnn.features.DenseFeatureMatrix;
 import jnn.features.DenseFeatureVector;
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
+import jnn.functions.composite.rnn.RNN;
 import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;

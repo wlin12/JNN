@@ -114,7 +114,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 	public void forward(String input, DenseNeuronArray output, int outputStart,
 			int outputEnd, OutputMappingStringToDense mapping) {
 		WordEntry word = vocab.getEntry(input);
-		if(word==null){throw new RuntimeException("unknown forward");}
+		if(word==null){throw new RuntimeException("unknown forward:" + input);}
 		SparseNeuronArray inputNeurons = new SparseNeuronArray(vocabSize);
 		inputNeurons.addNeuron(word.getId(), 1);
 		buildNetwork(inputNeurons, 0, vocabSize-1, output, outputStart, outputEnd, mapping);

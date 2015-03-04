@@ -97,14 +97,14 @@ public class WordEntry {
 	}
 	
 	public static void main(String[] args){
-		VocabWithHuffmanTree vocab = new VocabWithHuffmanTree();
+		Vocab vocab = new Vocab();
 		vocab.addWordToVocab("hello");
 		vocab.addWordToVocab("world");
 		vocab.addWordToVocab("!");
 		vocab.sortVocabByCount();
 		vocab.generateHuffmanCodes();
 		vocab.saveVocab(IOUtils.getPrintStream("/tmp/file"));
-		VocabWithHuffmanTree loadedVocab = VocabWithHuffmanTree.loadVocab(IOUtils.getReader("/tmp/file"));
+		Vocab loadedVocab = Vocab.loadVocab(IOUtils.getReader("/tmp/file"));
 		
 	}
 }

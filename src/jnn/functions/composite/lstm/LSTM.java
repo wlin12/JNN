@@ -1,12 +1,13 @@
-package jnn.functions.composite;
+package jnn.functions.composite.lstm;
 
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
+import jnn.functions.composite.rnn.RNN;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
 import jnn.functions.nonparametrized.TanSigmoidLayer;
 import jnn.functions.parametrized.CopyLayer;
 import jnn.functions.parametrized.DenseFullyConnectedLayer;
-import jnn.functions.parametrized.Layer;
+import jnn.functions.parametrized.HadamardProductLayer;
 import jnn.functions.parametrized.StaticLayer;
 import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseArrayToDense;
@@ -18,98 +19,24 @@ import jnn.training.TreeInference;
 import util.PrintUtils;
 import util.RandomUtils;
 
-public class RNN extends Layer implements DenseArrayToDenseArrayTransform, DenseArrayToDenseTransform{
-
-	private class RNNParameters {
-		DenseFullyConnectedLayer inputTransformLayer;
-		StaticLayer initialStateLayer;
-		
-		public RNNParameters(int inputDim, int stateDim) {
-			inputTransformLayer = new DenseFullyConnectedLayer(inputDim+stateDim, stateDim);
-			inputTransformLayer.initialize(true, false);
-			initialStateLayer = new StaticLayer(stateDim);
-		}
-		
-		public void update(double learningRate, double momentum){
-			inputTransformLayer.updateWeights(learningRate, momentum);
-			initialStateLayer.updateWeights(learningRate, momentum);
-
-		}
-	}
+public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseArrayToDenseTransform{
 	
-	private class RNNBlock {
-		DenseNeuronArray hprevState;
-
-		DenseNeuronArray hState;
-
-		int start;
-		int end;
-
-		public RNNBlock(DenseNeuronArray hprevState, int start) {
-			super();
-			this.hprevState = hprevState;
-			this.start = start;
-		}
-
-		public RNNBlock nextState(){
-			return new RNNBlock(hState, end+1);
-		}
-
-		public void addToInference(TreeInference inference, DenseNeuronArray inputX, RNNParameters parameters){
-			int units = inputX.len();
-			int stateSize = hprevState.size;
-
-			int level = start;
-			
-			DenseNeuronArray stateInput = new DenseNeuronArray(units + stateSize);
-			inference.addNeurons(level, stateInput);
-			
-			inference.addMapping(new OutputMappingDenseToDense(0,units-1,0,units-1,inputX, stateInput, CopyLayer.singleton));
-			inference.addMapping(new OutputMappingDenseToDense(0,stateSize-1,units,units+stateSize-1,hprevState, stateInput, CopyLayer.singleton));
-			level++;
-
-			DenseNeuronArray stateOutput = new DenseNeuronArray(stateSize);
-			inference.addNeurons(level, stateOutput);
-			
-			inference.addMapping(new OutputMappingDenseToDense(stateInput, stateOutput, parameters.inputTransformLayer));
-			
-			//next state computation
-			level++;
-			hState = new DenseNeuronArray(stateSize);
-			hState.setName("state at level " + start);
-			inference.addNeurons(level, hState);
-			inference.addMapping(new OutputMappingDenseToDense(stateOutput , hState, LogisticSigmoidLayer.singleton));
-		
-			end = level+1;
-		}
-	}
-
-	RNNParameters parameters;
-	RNNParameters parametersBackward;
+	LSTMParameters parameters;
+	LSTMParameters parametersBackward;
 
 	//combiner Layer
 	DenseFullyConnectedLayer combiner;
 	
-	int inputDim;
-	int stateDim;
-	int outputDim;
-
-	public int type_forward = 2; // 0 -> none, 1 -> no_center_word, 2 -> with_center_word
-	public int type_backward = 2; // 0 -> none, 1 -> no_center_word, 2 -> with_center_word
-	
-	public int outputSigmoid = 2; // 0 -> none, 1 -> sigmoid, 2 -> tanh;
 	private static final String FORWARDKEY = "forwardblocks";
 	private static final String BACKWARDKEY = "backwardblocks";
 	private static final String COMBINEDKEY = "combinedblocks";
 	private static final String COMBINEDFINALBLOCKKEY = "combinedfinalblock";
 
-	public RNN(int inputDim, int stateDim, int outputDim) {
-		this.inputDim = inputDim;
-		this.stateDim = stateDim;
-		this.outputDim = outputDim;
+	public LSTM(int inputDim, int stateDim, int outputDim) {
+		super(inputDim, stateDim, outputDim);
 		
-		parameters = new RNNParameters(inputDim, stateDim);
-		parametersBackward = new RNNParameters(inputDim, stateDim);
+		parameters = new LSTMParameters(inputDim, stateDim);
+		parametersBackward = new LSTMParameters(inputDim, stateDim);
 
 		combiner = new DenseFullyConnectedLayer(stateDim*2, outputDim);
 		combiner.initializeForTanhSigmoid();
@@ -129,22 +56,25 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 			DenseNeuronArray initialState = new DenseNeuronArray(stateDim);
 			inference.addNeurons(1, initialState);
 			
+			DenseNeuronArray initialCell = new DenseNeuronArray(stateDim);
+			inference.addNeurons(1, initialCell);
+
 //			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parameters.initialStateLayer);
 //			inference.addMapping(0, 1, initialStateMapping);
 //
+//			OutputMappingVoidToDense initialCellMapping = new OutputMappingVoidToDense(initialCell, parameters.initialCellLayer);
+//			inference.addMapping(0, 1, initialCellMapping);
 
-			RNNBlock blockForward = new RNNBlock(initialState, startLevel);
-			RNNBlock[] blocksForward = new RNNBlock[input.length];
-			for(int i = 0; i < input.length; i++){
-				blockForward.addToInference(inference, input[i], parameters);
-				blocksForward[i] = blockForward;
-				blockForward = blockForward.nextState();
-			}
+			LSTMBlock blockForward = new LSTMBlock(initialState, initialCell, startLevel);
+			LSTMBlock[] blocksForward = blockForward.addMultipleBlocks(inference, input, parameters);
 			map.setForwardParam(FORWARDKEY, blocksForward);
 		}
 		if(type_backward != 0){
 			DenseNeuronArray initialState = new DenseNeuronArray(stateDim);
 			inference.addNeurons(1, initialState);
+
+			DenseNeuronArray initialCell = new DenseNeuronArray(stateDim);
+			inference.addNeurons(1, initialCell);
 
 //			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parametersBackward.initialStateLayer);
 //			inference.addMapping(0, 1, initialStateMapping);
@@ -152,21 +82,16 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 //			OutputMappingVoidToDense initialCellMapping = new OutputMappingVoidToDense(initialCell, parametersBackward.initialCellLayer);
 //			inference.addMapping(0, 1, initialCellMapping);
 
-			RNNBlock blockBackward = new RNNBlock(initialState, startLevel);
-			RNNBlock[] blocksBackward = new RNNBlock[input.length];
-			for(int i = 0; i < input.length; i++){
-				blockBackward.addToInference(inference, input[input.length-i-1], parametersBackward);
-				blocksBackward[input.length-i-1] = blockBackward;
-				blockBackward = blockBackward.nextState();
-			}
+			LSTMBlock blockBackward = new LSTMBlock(initialState, initialCell, startLevel);
+			LSTMBlock[] blocksBackward = blockBackward.addMultipleBlocksReverse(inference, input, parametersBackward);
 			map.setForwardParam(BACKWARDKEY, blocksBackward);
 		}
 	}
 	
 	public void buildCombinerSequence(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
 		TreeInference inference = map.getSubInference();
-		RNNBlock[] blocksForward = (RNNBlock[])map.getForwardParam(FORWARDKEY);
-		RNNBlock[] blocksBackward = (RNNBlock[])map.getForwardParam(BACKWARDKEY);
+		LSTMBlock[] blocksForward = (LSTMBlock[])map.getForwardParam(FORWARDKEY);
+		LSTMBlock[] blocksBackward = (LSTMBlock[])map.getForwardParam(BACKWARDKEY);
 
 		DenseNeuronArray[] blocksCombinedInput = new DenseNeuronArray[input.length];
 		DenseNeuronArray[] blocksCombined = new DenseNeuronArray[input.length];
@@ -230,8 +155,8 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 	
 	public void buildCombinerFinalState(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
 		TreeInference inference = map.getSubInference();
-		RNNBlock[] blocksForward = (RNNBlock[])map.getForwardParam(FORWARDKEY);
-		RNNBlock[] blocksBackward = (RNNBlock[])map.getForwardParam(BACKWARDKEY);
+		LSTMBlock[] blocksForward = (LSTMBlock[])map.getForwardParam(FORWARDKEY);
+		LSTMBlock[] blocksBackward = (LSTMBlock[])map.getForwardParam(BACKWARDKEY);
 
 		int combinedLevel = inference.getMaxLevel()+1;
 		DenseNeuronArray blockCombinedInput = new DenseNeuronArray(stateDim*2);
@@ -330,16 +255,6 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 		combiner.updateWeights(learningRate, momentum);
 	}	
 
-	//	public void save(PrintStream out) {
-	//		transformLayer.save(out);
-	//		initialLayer.save(out);
-	//	}
-	//	
-	//	public void load(Scanner reader) {
-	//		transformLayer.load(reader);
-	//		initialLayer.load(reader);
-	//	}
-
 	@Override
 	public String toString() {
 		String ret = "This is a " + inputDim + "x" + stateDim + "x" + outputDim + " lstm\n";
@@ -355,7 +270,7 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 		double learningRate = 0.1;
 		GlobalParameters.useAdagradDefault = true;
 		GlobalParameters.commitMethodDefault = 0;
-		RNN recNN = new RNN(inputDim, stateDim, stateDim);
+		LSTM recNN = new LSTM(inputDim, stateDim, stateDim);
 
 		int len = 5;
 		double[][][] input = new double[instances][][];
