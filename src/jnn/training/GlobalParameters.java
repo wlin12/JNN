@@ -13,11 +13,11 @@ public class GlobalParameters {
 
 	public static boolean useAdagradL1Default = false;
 	
-	public static double l2regularizerLambdaDefault = 0.005;
+	public static double l2regularizerLambdaDefault = 0;
 	
-	public static double noiseDevDefault = 0.01;
+	public static double noiseDevDefault = 0.1;
 	
-	public static boolean addNoiseDefault = true;
+	public static boolean addNoiseDefault = false;
 
 	public static boolean sparseDefault = false;	
 
@@ -27,7 +27,7 @@ public class GlobalParameters {
 	
 	public static double maxError = 1;
 
-	public static double adagradL1LambdaDefault=0.00025;
+	public static double adagradL1LambdaDefault=0;
 
 	public static boolean fastUpdate = false;
 	

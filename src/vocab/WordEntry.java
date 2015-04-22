@@ -10,11 +10,11 @@ import util.SerializeUtils;
 public class WordEntry {
 
 	public String word;	
-	public int count = 0;
+	public long count = 0;
 	public int[] code;
 	public int[] point;
 	public int id;
-	
+
 	public WordEntry(String word) {
 		this.word = word;
 	}
@@ -56,7 +56,7 @@ public class WordEntry {
 		return word;
 	}
 
-	public int getCount() {
+	public long getCount() {
 		return count;
 	}
 
@@ -64,19 +64,28 @@ public class WordEntry {
 		out.println(id);
 		out.println(word);
 		out.println(count);
-		SerializeUtils.saveIntArray(code, out);
-		SerializeUtils.saveIntArray(point, out);
+		if(code != null){
+			out.println(true);
+			SerializeUtils.saveIntArray(code, out);
+			SerializeUtils.saveIntArray(point, out);
+		}
+		else{
+			out.println(false);			
+		}
 	}
 
 	public void load(Scanner in){
 		id = Integer.parseInt(in.nextLine());
 		word = in.nextLine();
-		count = Integer.parseInt(in.nextLine());
-		code = SerializeUtils.loadIntArray(in);
-		point = SerializeUtils.loadIntArray(in);
+		count = Long.parseLong(in.nextLine());
+		boolean containsHuffman = Boolean.parseBoolean(in.nextLine());
+		if(containsHuffman){
+			code = SerializeUtils.loadIntArray(in);
+			point = SerializeUtils.loadIntArray(in);
+		}
 		in.nextLine();
 	}
-	
+
 	public static WordEntry load(BufferedReader in){
 		try{
 			int id = Integer.parseInt(in.readLine());
@@ -84,8 +93,12 @@ public class WordEntry {
 			WordEntry entry = new WordEntry(word);
 			entry.id = id;
 			entry.count = Integer.parseInt(in.readLine());
-			entry.code = SerializeUtils.loadIntArray(in);
-			entry.point = SerializeUtils.loadIntArray(in);
+			boolean containsHuffman = Boolean.parseBoolean(in.readLine());
+			if(containsHuffman){
+
+				entry.code = SerializeUtils.loadIntArray(in);
+				entry.point = SerializeUtils.loadIntArray(in);
+			}
 			return entry;
 		} catch(Exception e){
 			throw new RuntimeException(e);
@@ -95,16 +108,16 @@ public class WordEntry {
 	public void addCount(int i) {
 		count+=i;
 	}
-	
+
 	public static void main(String[] args){
 		Vocab vocab = new Vocab();
 		vocab.addWordToVocab("hello");
 		vocab.addWordToVocab("world");
 		vocab.addWordToVocab("!");
 		vocab.sortVocabByCount();
-		vocab.generateHuffmanCodes();
+		vocab.saveVocab(System.err);
 		vocab.saveVocab(IOUtils.getPrintStream("/tmp/file"));
 		Vocab loadedVocab = Vocab.loadVocab(IOUtils.getReader("/tmp/file"));
-		
+
 	}
 }

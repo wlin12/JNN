@@ -1,16 +1,18 @@
 package jnn.functions.composite.lstm;
 
 import jnn.functions.DenseArrayToDenseArrayTransform;
+import jnn.functions.composite.lstm.aux.LSTMBlock;
+import jnn.functions.composite.lstm.aux.LSTMParameters;
+import jnn.functions.nonparametrized.CopyLayer;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
 import jnn.functions.nonparametrized.TanSigmoidLayer;
-import jnn.functions.parametrized.CopyLayer;
 import jnn.functions.parametrized.DenseFullyConnectedLayer;
 import jnn.functions.parametrized.Layer;
 import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
 
 public class SequentialLSTM extends Layer implements DenseArrayToDenseArrayTransform{	
 
@@ -50,7 +52,7 @@ public class SequentialLSTM extends Layer implements DenseArrayToDenseArrayTrans
 	}
 	
 	public void buildInference(DenseNeuronArray[] input, int decodeStart, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 
 		// add input units
 		for(int i = 0; i < input.length; i++){
@@ -115,7 +117,7 @@ public class SequentialLSTM extends Layer implements DenseArrayToDenseArrayTrans
 	}
 	
 	public void buildCombinerSequence(DenseNeuronArray[] input, int decodeStart, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		LSTMBlock[] blocksForward = (LSTMBlock[])map.getForwardParam(FORWARDKEY);
 		LSTMBlock[] blocksBackward = (LSTMBlock[])map.getForwardParam(BACKWARDKEY);
 
@@ -173,7 +175,7 @@ public class SequentialLSTM extends Layer implements DenseArrayToDenseArrayTrans
 	@Override
 	public void forward(DenseNeuronArray[] input, int inputStart, int inputEnd,
 			DenseNeuronArray[] output, int outputStart, int outputEnd, OutputMappingDenseArrayToDenseArray map) {
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		int decoderStart = input.length - output.length;
 		buildInference(input, decoderStart, inputStart, inputEnd, map);
 		buildCombinerSequence(input, decoderStart, inputStart, inputEnd, map);
@@ -195,7 +197,7 @@ public class SequentialLSTM extends Layer implements DenseArrayToDenseArrayTrans
 			int outputEnd, OutputMappingDenseArrayToDenseArray map) {
 
 		DenseNeuronArray[] blocks = (DenseNeuronArray[])map.getForwardParam(COMBINEDKEY);
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		for(int i = 0; i < output.length; i++){
 			DenseNeuronArray outputI = output[i];
 			for(int d = 0; d < outputDim; d++){	

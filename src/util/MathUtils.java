@@ -55,6 +55,24 @@ public class MathUtils {
 		return maxIndex;
 	}
 	
+	public static int maxIndex(int[] vector, int start, int end) {
+		int maxIndex = start;
+		for(int i = start+1; i <= end; i++){
+			if (vector[i] > vector[maxIndex]){
+				maxIndex = i;
+			}
+		}
+		return maxIndex;
+	}
+	
+	public static int max(int[] vector){
+		return vector[maxIndex(vector)];
+	}
+	
+	public static int max(int[] vector, int start, int end){
+		return vector[maxIndex(vector,start,end)];
+	}
+	
 	public static int minIndex(int[] vector) {
 		int maxIndex = 0;
 		for(int i = 1; i < vector.length; i++){
@@ -63,6 +81,24 @@ public class MathUtils {
 			}
 		}
 		return maxIndex;
+	}
+	
+	public static int minIndex(int[] vector, int start, int end) {
+		int maxIndex = start;
+		for(int i = start+1; i <= end; i++){
+			if (vector[i] < vector[maxIndex]){
+				maxIndex = i;
+			}
+		}
+		return maxIndex;
+	}
+	
+	public static int min(int[] vector){
+		return vector[minIndex(vector)];
+	}
+	
+	public static int min(int[] vector, int start, int end){
+		return vector[minIndex(vector,start,end)];
 	}
 	
 	public static int maxIndex(double[] vector, int start, int end) {
@@ -78,6 +114,10 @@ public class MathUtils {
 	
 	public static double max(double[] vector){
 		return vector[maxIndex(vector)];
+	}
+	
+	public static double max(double[] vector, int start, int end){
+		return vector[maxIndex(vector,start,end)];
 	}
 
 	public static double arraySum(double[] vector) {

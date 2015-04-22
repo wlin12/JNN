@@ -68,6 +68,24 @@ public class DenseFeatureVector {
 		}
 	}
 
+	public DenseFeatureVector(int outputSize, boolean useAdagrad, boolean useMomentum, boolean useAdadelta) {		
+		this.outputSize = outputSize;
+		this.useAdadelta = useAdadelta;
+		this.useAdagrad = useAdagrad;
+		this.useMomentum = useMomentum;
+		if(useAdagrad){
+			adagradQuotient = Nd4j.zeros(outputSize);
+			adagradQuotient.addi(adagradEps);
+		}
+		if(useMomentum){
+			momentumPrevUpdate = Nd4j.zeros(outputSize);			
+		}
+		if(useAdadelta){
+			adadeltaRMSGradient = Nd4j.zeros(outputSize);
+			adadeltaRMSUpdate = Nd4j.zeros(outputSize);
+		}
+	}
+	
 	public void initialize(double[] vals){
 		features = Nd4j.create(vals);
 		featuresT = features.transpose();
@@ -269,6 +287,10 @@ public class DenseFeatureVector {
 			}
 		}
 		return index;
+	}
+	
+	public void setL2(double l2){
+		this.l2 = l2;
 	}
 
 	public static void main(String[] args){

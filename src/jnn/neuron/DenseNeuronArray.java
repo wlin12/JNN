@@ -44,15 +44,14 @@ public class DenseNeuronArray extends NeuronArray{
 	@Override
 	public String toString() {
 		String ret = "";
-		String size = "-";
-		if(outputs!=null){
-			size = outputs.size(0) + "";
-		}
 		if(name != null){
 			ret = name + "(" + size + ")" + "\n";
 		}
+		else{
+			ret = "unamed" + "(" + size + ")" + "\n";
+		}
 		ret += outputs;
-		ret += "\n" + error;
+		ret += error;
 		return ret;
 	}
 
@@ -78,6 +77,9 @@ public class DenseNeuronArray extends NeuronArray{
 		return ret;
 	}
 
+	public String getName() {
+		return name;
+	}
 	
 	public void setName(String name) {
 		this.name = name;
@@ -136,8 +138,20 @@ public class DenseNeuronArray extends NeuronArray{
 		outputs.putScalar(index, val + outputs.getDouble(index));
 	}
 	
+	public void addNeuron(DenseNeuronArray neurons, int startSource, int startTarget){
+		for(int i = 0; i < size; i++){
+			outputs.putScalar(i+startTarget, outputs.getDouble(i+startTarget) + neurons.getNeuron(i+startSource));			
+		}
+	}
+	
 	public double getError(int index){
 		return error.getDouble(index);
+	}
+
+	public void addError(DenseNeuronArray neurons, int startSource, int startTarget){
+		for(int i = 0; i < size; i++){
+			error.putScalar(i + startTarget, error.getDouble(i + startTarget) + neurons.getError(i + startSource));
+		}
 	}
 	
 	public void addError(int index, double val){
@@ -191,7 +205,7 @@ public class DenseNeuronArray extends NeuronArray{
 	
 	public void setErrorRange(int start, int end, INDArray vals){
 		if(start == 0 && end == size-1){
-			error.addi(vals);		
+			error.addi(vals);
 		}
 		else{
 			for(int i = start; i <= end; i++){
@@ -203,6 +217,39 @@ public class DenseNeuronArray extends NeuronArray{
 	@Override
 	public void beforeBackward() {
 		INDArrayUtils.capValues(error, -GlobalParameters.maxError, GlobalParameters.maxError);
+	}
+
+	@Override
+	public void capValues() {		
+	}
+
+	public static DenseNeuronArray[] asArray(int length, int letterProjectionDim) {
+		DenseNeuronArray[] ret = new DenseNeuronArray[length];
+		for(int i = 0; i < length; i++){
+			ret[i] = new DenseNeuronArray(letterProjectionDim);
+		}
+		return ret;
 	}	
+	
+	public static DenseNeuronArray[] asArray(int length, int letterProjectionDim, String name) {
+		DenseNeuronArray[] ret = new DenseNeuronArray[length];
+		for(int i = 0; i < length; i++){
+			ret[i] = new DenseNeuronArray(letterProjectionDim);
+			ret[i].setName(name + "[" + i + "]");
+		}
+		return ret;
+	}
+
+	public void checkForNaN() {
+		for(int i = 0 ; i < size; i++){
+			if(Double.isNaN(outputs.getDouble(i))){
+				throw new RuntimeException("found output nan in index " + i);
+			}
+			if(Double.isNaN(error.getDouble(i))){
+				throw new RuntimeException("found error nan in index " + i);
+			}
+		}
+	}
+
 }
 

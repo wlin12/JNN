@@ -17,6 +17,8 @@ import util.ExpTable;
 
 public class LogisticSigmoidLayer extends Layer implements DenseToDenseTransform, SparseToSparseTransform{
 	
+	private static final String EXPVAL = "exp";
+	
 	public static LogisticSigmoidLayer singleton = new LogisticSigmoidLayer();
 	public static ActivationFunction activation = new Sigmoid();
 
@@ -28,10 +30,14 @@ public class LogisticSigmoidLayer extends Layer implements DenseToDenseTransform
 		if(inputDim != outputDim){
 			throw new RuntimeException(inputDim + " " + outputDim);
 		}
+		double[] exp = new double[inputDim];
 //		output.setOutputRange(outputStart, outputEnd, activation.apply(input.getOutputRange(inputStart, inputEnd)));
-
 		for(int i = 0; i < inputDim; i++){			
-			output.addNeuron(i+outputStart, ExpTable.getExpSing(input.getNeuron(i+inputStart)));
+			exp[i]=ExpTable.getExpSing(input.getNeuron(i+inputStart));
+		}
+		mapping.setForwardParam(EXPVAL, exp);
+		for(int i = 0; i < inputDim; i++){			
+			output.addNeuron(i+outputStart, exp[i]);
 		}
 	}
 	
@@ -61,8 +67,10 @@ public class LogisticSigmoidLayer extends Layer implements DenseToDenseTransform
 //		INDArray yGrad = output.getErrorRange(outputStart, outputEnd);
 //		INDArray xGrad = activation.applyDerivative(x).mul(yGrad);
 //		input.setErrorRange(inputStart, inputEnd, xGrad);
+		double[] exp = (double[])mapping.getForwardParam(EXPVAL);
+
 		for(int i = 0; i < inputDim; i++){	
-			input.addError(i+inputStart, ExpTable.getExpDSing(input.getNeuron(i+inputStart))*output.getError(i+outputStart));
+			input.addError(i+inputStart, (1-exp[i])*exp[i]*output.getError(i+outputStart));
 		}
 	}
 

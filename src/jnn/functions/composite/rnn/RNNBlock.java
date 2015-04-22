@@ -1,10 +1,10 @@
 package jnn.functions.composite.rnn;
 
+import jnn.functions.nonparametrized.CopyLayer;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
-import jnn.functions.parametrized.CopyLayer;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
 
 public class RNNBlock {
 	DenseNeuronArray hprevState;
@@ -24,7 +24,7 @@ public class RNNBlock {
 		return new RNNBlock(hState, end+1);
 	}
 
-	public void addToInference(TreeInference inference, DenseNeuronArray inputX, RNNParameters parameters){
+	public void addToInference(GraphInference inference, DenseNeuronArray inputX, RNNParameters parameters){
 		int units = inputX.len();
 		int stateSize = hprevState.size;
 

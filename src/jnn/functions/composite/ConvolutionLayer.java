@@ -1,16 +1,22 @@
 package jnn.functions.composite;
 
+import java.io.BufferedReader;
+import java.io.PrintStream;
+
 import jnn.features.DenseFeatureMatrix;
 import jnn.features.DenseFeatureVector;
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
+import jnn.functions.composite.lstm.BLSTM;
+import jnn.functions.composite.lstm.aux.LSTMParameters;
 import jnn.functions.composite.rnn.RNN;
+import jnn.functions.parametrized.DenseFullyConnectedLayer;
 import jnn.mapping.Mapping;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.neuron.DenseNeuronArray;
 import jnn.training.GlobalParameters;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,8 +27,7 @@ import util.RandomUtils;
 
 public class ConvolutionLayer extends RNN implements DenseArrayToDenseTransform, DenseArrayToDenseArrayTransform{
 
-	public static final String CONVOLUTION_KEY = "convolution";
-	public static final String MAX_POOLING_INDEXES = "maxpoolindexes";
+	private static final String MAX_POOLING_INDEXES = "maxpoolindexes";
 	
 	int windowSize;
 	
@@ -177,7 +182,7 @@ public class ConvolutionLayer extends RNN implements DenseArrayToDenseTransform,
 		for(int iteration = 0; iteration < 1000; iteration++){
 			long iterationStart = System.currentTimeMillis();
 			int i = iteration % instances;
-			TreeInference inference = new TreeInference(0);
+			GraphInference inference = new GraphInference(0, true);
 			DenseNeuronArray[] inputNeurons = new DenseNeuronArray[len];
 			DenseNeuronArray states = new DenseNeuronArray(stateDim);
 			states.setName("output");
@@ -208,6 +213,35 @@ public class ConvolutionLayer extends RNN implements DenseArrayToDenseTransform,
 			double avgTime = (System.currentTimeMillis() - startTime)/(iteration+1);
 			System.err.println("avg time " + avgTime);
 			System.err.println("this iteration " + (System.currentTimeMillis() - iterationStart));
+		}
+	}
+	
+	public void save(PrintStream out) {
+		out.println(inputDim);
+		out.println(outputDim);
+		out.println(windowSize);
+				
+		for(int i = 0; i < windowSize*2+1; i++){
+			convolutionWeights[i].save(out);
+		}
+		bias.save(out);
+	}
+
+	public static ConvolutionLayer load(BufferedReader in) {
+		try {
+			int inputDim = Integer.parseInt(in.readLine());
+			int outputDim = Integer.parseInt(in.readLine());
+			int windowSize = Integer.parseInt(in.readLine());
+			ConvolutionLayer layer = new ConvolutionLayer(windowSize, inputDim, outputDim);
+			for(int i = 0; i < windowSize*2+1; i++){
+				layer.convolutionWeights[i] = DenseFeatureMatrix.load(in);
+			}
+			layer.bias = DenseFeatureVector.load(in);
+			
+
+			return layer;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

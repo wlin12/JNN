@@ -1,29 +1,29 @@
-package jnn.functions.composite.lstm;
+package jnn.functions.composite.lstm.aux;
 
+import jnn.functions.nonparametrized.CopyLayer;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
 import jnn.functions.nonparametrized.TanSigmoidLayer;
-import jnn.functions.parametrized.CopyLayer;
 import jnn.functions.parametrized.HadamardProductLayer;
 import jnn.mapping.OutputMappingDenseArrayToDense;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
 
 public class LSTMBlock {
-	DenseNeuronArray hprevState;
+	public DenseNeuronArray hprevState;
 
-	DenseNeuronArray iGate;
-	DenseNeuronArray fGate;
-	DenseNeuronArray oGate;
-	DenseNeuronArray cGate;
+	public DenseNeuronArray iGate;
+	public DenseNeuronArray fGate;
+	public DenseNeuronArray oGate;
+	public DenseNeuronArray cGate;
 
-	DenseNeuronArray cprevMem;
-	DenseNeuronArray cMen;
+	public DenseNeuronArray cprevMem;
+	public DenseNeuronArray cMen;
 
-	DenseNeuronArray hState;
+	public DenseNeuronArray hState;
 
-	int start;
-	int end;
+	public int start;
+	public int end;
 
 	public LSTMBlock(DenseNeuronArray hprevState,
 			DenseNeuronArray cprevMem, int start) {
@@ -37,8 +37,11 @@ public class LSTMBlock {
 		return new LSTMBlock(hState, cMen, end+1);
 	}
 
-	public void addToInference(TreeInference inference, DenseNeuronArray inputX, LSTMParameters parameters){
+	public void addToInference(GraphInference inference, DenseNeuronArray inputX, LSTMParameters parameters){
 		int units = inputX.len();
+		if(units == 0){
+			throw new RuntimeException("input has size 0");
+		}
 		int stateSize = hprevState.size;
 
 		int level = start;
@@ -146,7 +149,7 @@ public class LSTMBlock {
 		end = level+1;
 	}
 	
-	public LSTMBlock[] addMultipleBlocks(TreeInference inference, DenseNeuronArray[] input, LSTMParameters parameters){
+	public LSTMBlock[] addMultipleBlocks(GraphInference inference, DenseNeuronArray[] input, LSTMParameters parameters){
 		LSTMBlock[] blocks = new LSTMBlock[input.length];
 		LSTMBlock currentBlock = this;
 		for(int i = 0; i < input.length; i++){
@@ -157,7 +160,7 @@ public class LSTMBlock {
 		return blocks;
 	}
 	
-	public LSTMBlock[] addMultipleBlocksReverse(TreeInference inference, DenseNeuronArray[] input, LSTMParameters parameters){
+	public LSTMBlock[] addMultipleBlocksReverse(GraphInference inference, DenseNeuronArray[] input, LSTMParameters parameters){
 		LSTMBlock[] blocks = new LSTMBlock[input.length];
 		LSTMBlock currentBlock = this;
 		for(int i = 0; i < input.length; i++){

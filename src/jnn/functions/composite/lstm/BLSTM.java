@@ -1,11 +1,22 @@
 package jnn.functions.composite.lstm;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintStream;
+
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
+import jnn.functions.composite.lstm.aux.LSTMBlock;
+import jnn.functions.composite.lstm.aux.LSTMInputNeurons;
+import jnn.functions.composite.lstm.aux.LSTMMapping;
+import jnn.functions.composite.lstm.aux.LSTMOutputNeurons;
+import jnn.functions.composite.lstm.aux.LSTMParameters;
+import jnn.functions.composite.lstm.aux.LSTMStateTransform;
 import jnn.functions.composite.rnn.RNN;
+import jnn.functions.composite.rnn.RNNParameters;
+import jnn.functions.nonparametrized.CopyLayer;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
 import jnn.functions.nonparametrized.TanSigmoidLayer;
-import jnn.functions.parametrized.CopyLayer;
 import jnn.functions.parametrized.DenseFullyConnectedLayer;
 import jnn.functions.parametrized.HadamardProductLayer;
 import jnn.functions.parametrized.StaticLayer;
@@ -15,11 +26,12 @@ import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
 import jnn.training.GlobalParameters;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
+import util.IOUtils;
 import util.PrintUtils;
 import util.RandomUtils;
 
-public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseArrayToDenseTransform{
+public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseArrayToDenseTransform, LSTMStateTransform{
 	
 	LSTMParameters parameters;
 	LSTMParameters parametersBackward;
@@ -32,7 +44,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 	private static final String COMBINEDKEY = "combinedblocks";
 	private static final String COMBINEDFINALBLOCKKEY = "combinedfinalblock";
 
-	public LSTM(int inputDim, int stateDim, int outputDim) {
+	public BLSTM(int inputDim, int stateDim, int outputDim) {
 		super(inputDim, stateDim, outputDim);
 		
 		parameters = new LSTMParameters(inputDim, stateDim);
@@ -44,7 +56,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 	}
 	
 	public void buildInference(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 
 		// add input units
 		for(int i = 0; i < input.length; i++){
@@ -54,9 +66,11 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 
 		if(type_forward != 0){
 			DenseNeuronArray initialState = new DenseNeuronArray(stateDim);
+			initialState.init();
 			inference.addNeurons(1, initialState);
 			
 			DenseNeuronArray initialCell = new DenseNeuronArray(stateDim);
+			initialCell.init();
 			inference.addNeurons(1, initialCell);
 
 //			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parameters.initialStateLayer);
@@ -71,9 +85,11 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 		}
 		if(type_backward != 0){
 			DenseNeuronArray initialState = new DenseNeuronArray(stateDim);
+			initialState.init();
 			inference.addNeurons(1, initialState);
 
 			DenseNeuronArray initialCell = new DenseNeuronArray(stateDim);
+			initialCell.init();
 			inference.addNeurons(1, initialCell);
 
 //			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parametersBackward.initialStateLayer);
@@ -89,7 +105,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 	}
 	
 	public void buildCombinerSequence(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		LSTMBlock[] blocksForward = (LSTMBlock[])map.getForwardParam(FORWARDKEY);
 		LSTMBlock[] blocksBackward = (LSTMBlock[])map.getForwardParam(BACKWARDKEY);
 
@@ -154,7 +170,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 	}
 	
 	public void buildCombinerFinalState(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		LSTMBlock[] blocksForward = (LSTMBlock[])map.getForwardParam(FORWARDKEY);
 		LSTMBlock[] blocksBackward = (LSTMBlock[])map.getForwardParam(BACKWARDKEY);
 
@@ -184,7 +200,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 	@Override
 	public void forward(DenseNeuronArray[] input, int inputStart, int inputEnd,
 			DenseNeuronArray[] output, int outputStart, int outputEnd, OutputMappingDenseArrayToDenseArray map) {
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		buildInference(input, inputStart, inputEnd, map);
 		buildCombinerSequence(input, inputStart, inputEnd, map);
 		inference.init();
@@ -203,7 +219,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 	public void forward(DenseNeuronArray[] input, int inputStart, int inputEnd,
 			DenseNeuronArray output, int outputStart, int outputEnd,
 			OutputMappingDenseArrayToDense map) {
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		buildInference(input, inputStart, inputEnd, map);
 		buildCombinerFinalState(input, inputStart, inputEnd, map);
 		inference.init();
@@ -222,7 +238,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 
 		DenseNeuronArray[] blocks = (DenseNeuronArray[])map.getForwardParam(COMBINEDKEY);
 
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		for(int i = 0; i < output.length; i++){
 			DenseNeuronArray outputI = output[i];
 			for(int d = 0; d < outputDim; d++){	
@@ -238,7 +254,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 			int inputEnd, DenseNeuronArray output, int outputStart,
 			int outputEnd, OutputMappingDenseArrayToDense mapping) {
 		
-		TreeInference inference = mapping.getSubInference();
+		GraphInference inference = mapping.getSubInference();
 		DenseNeuronArray blockCombinedTan = (DenseNeuronArray)mapping.getForwardParam(COMBINEDFINALBLOCKKEY);		
 
 		for(int d = 0; d < outputDim; d++){	
@@ -270,8 +286,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 		double learningRate = 0.1;
 		GlobalParameters.useAdagradDefault = true;
 		GlobalParameters.commitMethodDefault = 0;
-		LSTM recNN = new LSTM(inputDim, stateDim, stateDim);
-
+		BLSTM recNN = new BLSTM(inputDim, stateDim, stateDim);
 		int len = 5;
 		double[][][] input = new double[instances][][];
 		double[][][] expected = new double[instances][][];
@@ -290,7 +305,7 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 		for(int iteration = 0; iteration < 1000; iteration++){
 			long iterationStart = System.currentTimeMillis();
 			int i = iteration % instances;
-			TreeInference inference = new TreeInference(0);
+			GraphInference inference = new GraphInference(0, true);
 			DenseNeuronArray[] inputNeurons = new DenseNeuronArray[len];
 			DenseNeuronArray[] states = new DenseNeuronArray[len];
 			for(int j = 0; j < len; j++){
@@ -332,4 +347,70 @@ public class LSTM extends RNN implements DenseArrayToDenseArrayTransform, DenseA
 			System.err.println("this iteration " + (System.currentTimeMillis() - iterationStart));
 		}
 	}
+
+	@Override
+	public void forward(LSTMMapping map) {
+		GraphInference inference = map.getSubInference();
+		DenseNeuronArray[] x = LSTMDecoderState.getInputs(map.states);
+		buildInference(x, 0, inputDim-1, map);
+		buildCombinerSequence(x, 0, inputDim-1, map);
+		inference.init();
+		inference.forward();
+		
+		DenseNeuronArray[] lstmStates = LSTMDecoderState.getStates(map.states);
+
+		DenseNeuronArray[] blocks = (DenseNeuronArray[])map.getForwardParam(COMBINEDKEY);
+		for(int i = 0; i < lstmStates.length; i++){
+			DenseNeuronArray outputI = lstmStates[i];
+			for(int d = 0; d < outputDim; d++){				
+				outputI.addNeuron(d, blocks[i].getNeuron(d));
+			}
+		}
+	}
+
+	@Override
+	public void backward(LSTMMapping map) {
+		DenseNeuronArray[] blocks = (DenseNeuronArray[])map.getForwardParam(COMBINEDKEY);
+		DenseNeuronArray[] lstmStates = LSTMDecoderState.getStates(map.states);
+
+		GraphInference inference = map.getSubInference();
+		for(int i = 0; i < lstmStates.length; i++){
+			DenseNeuronArray outputI = lstmStates[i];
+			for(int d = 0; d < outputDim; d++){	
+				blocks[i].addError(d, outputI.getError(d));
+			}
+		}
+		inference.backward();
+	}
+	
+	public void save(PrintStream out) {
+		out.println(inputDim);
+		out.println(stateDim);
+		out.println(outputDim);
+		out.println(type_forward);
+		out.println(type_backward);
+		out.println(outputSigmoid);
+		parameters.save(out);
+		parametersBackward.save(out);
+		combiner.save(out);
+	}
+
+	public static BLSTM load(BufferedReader in) {
+		try {
+			int inputDim = Integer.parseInt(in.readLine());
+			int stateDim = Integer.parseInt(in.readLine());
+			int outputDim = Integer.parseInt(in.readLine());
+			BLSTM layer = new BLSTM(inputDim, stateDim, outputDim);
+			layer.type_forward = Integer.parseInt(in.readLine());
+			layer.type_backward = Integer.parseInt(in.readLine());
+			layer.outputSigmoid = Integer.parseInt(in.readLine());
+			layer.parameters = LSTMParameters.load(in);
+			layer.parametersBackward = LSTMParameters.load(in);
+			layer.combiner = DenseFullyConnectedLayer.load(in);
+			return layer;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 }

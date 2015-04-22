@@ -54,6 +54,28 @@ public class DenseFeatureMatrix {
 	//commit
 	int commitMethod = GlobalParameters.commitMethodDefault;
 
+	public DenseFeatureMatrix(int inputSize, int outputSize, boolean useAdagrad, boolean useMomentum, boolean useAdadelta) {
+		if(inputSize == 1){
+			throw new RuntimeException("input size = 1: use vector instead");
+		}
+		this.inputSize = inputSize;
+		this.outputSize = outputSize;
+		this.useAdadelta = useAdadelta;
+		this.useAdagrad = useAdagrad;
+		this.useMomentum = useMomentum;
+		if(useAdagrad){
+			adagradQuotient = Nd4j.zeros(inputSize, outputSize);
+			adagradQuotient.addi(adagradEps);
+		}
+		if(useMomentum){
+			momentumPrevUpdate = Nd4j.zeros(inputSize, outputSize);			
+		}
+		if(useAdadelta){
+			adadeltaRMSGradient = Nd4j.zeros(inputSize, outputSize);
+			adadeltaRMSUpdate = Nd4j.zeros(inputSize, outputSize);
+		}
+	}
+
 	public DenseFeatureMatrix(int inputSize, int outputSize) {
 		if(inputSize == 1){
 			throw new RuntimeException("input size = 1: use vector instead");
@@ -113,6 +135,14 @@ public class DenseFeatureMatrix {
 
 	public void storeGradients(int processId, INDArray gradient){
 		gradientStore.addGradient(processId, gradient);		
+	}
+	
+	public void storeInputsAndOutputs(int id, INDArray x, INDArray yGrad) {
+		gradientStore.addInputAndOutput(id, x, yGrad);
+	}
+
+	public void checkinGradients(int id){
+		gradientStore.computeGradientAndAdd(id);
 	}
 
 	public void update(){
@@ -276,12 +306,23 @@ public class DenseFeatureMatrix {
 		}
 		return matrix;
 	}
+	
+	public void setL2(double l2){
+		this.l2 = l2;
+	}
 
 	public static void main(String[] args){
-		DenseFeatureMatrix matrix = new DenseFeatureMatrix(10, 5);
+		DenseFeatureMatrix matrix = new DenseFeatureMatrix(1, 5);
 		matrix.initializeUniform(-0.1, 0.1);
 		matrix.save(IOUtils.getPrintStream("/tmp/file"));
 		
 		DenseFeatureMatrix.load(IOUtils.getReader("/tmp/file")).save(System.err);		
 	}
+
+	public void normalize() {
+		features.divi(features.sum(0).getDouble(0)*inputSize);
+		featuresT = features.transpose();
+	}
+
+	
 }

@@ -33,10 +33,10 @@ public class OutputMappingDenseToDense extends Mapping{
 	@Override
 	public void forward() {
 		if(!input.isOutputInitialized()){
-			throw new RuntimeException("input is null");
+			throw new RuntimeException("input is null: " + input);
 		}
 		if(!output.isOutputInitialized()){
-			throw new RuntimeException("output is null");
+			throw new RuntimeException("output is null: " + output);
 		}
 		long time = System.currentTimeMillis();
 		try{

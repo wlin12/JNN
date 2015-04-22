@@ -12,6 +12,10 @@ import java.util.Scanner;
 import java.util.Map.Entry;
 
 import util.AliasMethod;
+import util.IOUtils;
+import util.MathUtils;
+import util.SerializeUtils;
+import vocab.ArbitraryHuffman.Node;
 
 public class Vocab {
 
@@ -24,10 +28,16 @@ public class Vocab {
 	int minOccur = 5;
 	int maxTokens = -1;
 
-	HashMap<Integer, Integer> numberOfwordsByLength = new HashMap<Integer, Integer>();
+	HashMap<Integer, Long> numberOfwordsByLength = new HashMap<Integer, Long>();
 	int maxLenght = 0;
 
-	AliasMethod sampling;	
+	AliasMethod sampling;
+	
+	int numberOfHuffmanNodes = 0;
+	int[][] huffmanNodeChildren;
+	int[] nodeNumberOfChildren;
+	int[] nodeLevel;
+	long[] nodeCount;
 
 	public void loadFromCountFile(String file){
 		try {
@@ -67,9 +77,16 @@ public class Vocab {
 			out.println(types);
 			out.println(minOccur);
 			out.println(maxTokens);
-			out.println(maxLenght);
+			out.println(maxLenght);			
 			for(WordEntry word : words){
 				word.save(out);
+			}
+			out.println(numberOfHuffmanNodes);
+			if(numberOfHuffmanNodes > 0){
+				SerializeUtils.saveIntMatrix(huffmanNodeChildren, out);
+				SerializeUtils.saveIntArray(nodeNumberOfChildren, out);
+				SerializeUtils.saveIntArray(nodeLevel, out);
+				SerializeUtils.saveLongArray(nodeCount, out);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -86,7 +103,7 @@ public class Vocab {
 			out.println(maxLenght);
 			for(WordEntry word : words){
 				word.save(out);
-			}
+			}			
 			out.close();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -107,6 +124,7 @@ public class Vocab {
 				words.add(wordEntry);
 				hash.put(wordEntry.word, wordEntry);
 			}
+			
 			reader.close();
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
@@ -126,6 +144,13 @@ public class Vocab {
 				vocab.words.add(wordEntry);
 				vocab.hash.put(wordEntry.word, wordEntry);
 			}
+			vocab.numberOfHuffmanNodes = Integer.parseInt(in.readLine());
+			if(vocab.numberOfHuffmanNodes > 0){
+				vocab.huffmanNodeChildren = SerializeUtils.loadIntMatrix(in);
+				vocab.nodeNumberOfChildren = SerializeUtils.loadIntArray(in);
+				vocab.nodeLevel = SerializeUtils.loadIntArray(in);
+				vocab.nodeCount = SerializeUtils.loadLongArray(in);				
+			}
 			return vocab;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -136,7 +161,7 @@ public class Vocab {
 		addWordToVocab(word,1);
 	}	
 
-	public void addWordToVocab(String word, int count){
+	public void addWordToVocab(String word, long count){
 		WordEntry wordObj = null;		
 		if(!hash.containsKey(word)){
 			wordObj = new WordEntry(word);
@@ -149,7 +174,7 @@ public class Vocab {
 			wordObj = hash.get(word);
 		}		
 		if(!numberOfwordsByLength.containsKey(word.length())){
-			numberOfwordsByLength.put(word.length(), 0);
+			numberOfwordsByLength.put(word.length(), 0l);
 		}
 		numberOfwordsByLength.put(word.length(), numberOfwordsByLength.get(word.length()) + count);
 		if(word.length() > maxLenght){
@@ -215,7 +240,7 @@ public class Vocab {
 	//make sure to run sortVocab first
 	public void generateHuffmanCodes(){
 		int[] parentIndexes = new int[words.size() * 2]; 
-		int[] count = new int[words.size() * 2];
+		long[] count = new long[words.size() * 2];
 		int[] binary = new int[words.size() * 2];
 		int min1index, min2index;
 
@@ -230,7 +255,20 @@ public class Vocab {
 		int lowestIndexLeft = words.size() - 1;
 		int lowestIndexRight = words.size();
 
-		for(int i = 0; i < words.size() - 1; i++){
+		numberOfHuffmanNodes = words.size()-1; 
+		huffmanNodeChildren = new int[numberOfHuffmanNodes][2];
+		nodeNumberOfChildren = new int[numberOfHuffmanNodes];
+		nodeLevel = new int[numberOfHuffmanNodes];
+		nodeCount = new long[numberOfHuffmanNodes];
+
+		for(int i = 0; i < numberOfHuffmanNodes; i++){
+			for(int j = 0; j < 2; j++){
+				huffmanNodeChildren[i][j] = -1;
+			}
+			nodeNumberOfChildren[i] = 2;
+		}
+		
+		for(int i = 0; i < numberOfHuffmanNodes; i++){
 			if(lowestIndexLeft >= 0){
 				if(count[lowestIndexLeft] < count[lowestIndexRight]){
 					min1index = lowestIndexLeft;
@@ -262,7 +300,28 @@ public class Vocab {
 			count[i + words.size()] = count[min1index] + count[min2index];
 			parentIndexes[min1index] = i + words.size();
 			parentIndexes[min2index] = i + words.size();
+			huffmanNodeChildren[i][0] = min1index;
+			huffmanNodeChildren[i][1] = min2index;
+			int node1Level = 0;
+			if(min1index >= words.size()){
+				node1Level = nodeLevel[min1index-words.size()];
+				nodeCount[i]+=nodeCount[min1index-words.size()];
+			}
+			else{
+				nodeCount[i]+=getEntryFromId(min1index).count;
+			}
+			int node2Level = 0;
+			if(min2index >= words.size()){
+				node2Level = nodeLevel[min2index-words.size()];
+				nodeCount[i]+=nodeCount[min2index-words.size()];
+			}
+			else{
+				nodeCount[i]+=getEntryFromId(min2index).count;				
+			}
+			nodeLevel[i] = Math.max(node1Level, node2Level)+1;
 			binary[min2index] = 1;
+
+			//			binary[min1index] = 0;
 		}
 
 		for (int i = 0; i < words.size(); i++){
@@ -271,7 +330,7 @@ public class Vocab {
 			ArrayList<Integer> code = new ArrayList<Integer>();
 			ArrayList<Integer> points = new ArrayList<Integer>();
 			WordEntry entry = words.get(i);
-			while(index < words.size() * 2 - 2){
+			while(index < words.size() + numberOfHuffmanNodes - 1){
 				code.add(binary[index]);
 				points.add(index);
 				index = parentIndexes[index];
@@ -281,6 +340,110 @@ public class Vocab {
 			entry.code = new int[codeBit];
 			entry.point = new int[codeBit+1];
 			entry.point[0] = words.size() - 2;
+			for(int j = 0; j < codeBit; j++){
+				entry.code[codeBit - j - 1] = code.get(j);
+				entry.point[codeBit - j] = points.get(j) - words.size();
+			}
+
+			if(codeBit == MAXCODELEN){
+				throw new RuntimeException("for some reason "+MAXCODELEN+" bits were used for the code");
+			}
+		}
+	}
+
+	public void generateHuffmanCodesForNAryTree(int nary){
+		int[] parentIndexes = new int[words.size() * 2]; 
+		long[] count = new long[words.size() * 2];
+		int[] codeAtPoint = new int[words.size() * 2];
+		int[] minIndexes = new int[nary];
+
+		for(int i = 0; i < words.size(); i++){
+			count[i] = words.get(i).count;
+			if(count[i] == 0){
+				count[i] = 1;
+			}
+			count[i+words.size()] = Integer.MAX_VALUE;
+		}
+
+		int lowestIndexLeft = words.size() - 1;
+		int lowestIndexRight = words.size();
+
+		numberOfHuffmanNodes = (words.size()-1) / (nary-1); 
+		
+		if((words.size()-1) % (nary-1) > 0){
+			numberOfHuffmanNodes++;
+		}
+		huffmanNodeChildren = new int[numberOfHuffmanNodes][nary];
+		nodeNumberOfChildren = new int[numberOfHuffmanNodes];
+		nodeLevel = new int[numberOfHuffmanNodes];
+		nodeCount = new long[numberOfHuffmanNodes];
+		for(int i = 0; i < numberOfHuffmanNodes; i++){
+			for(int j = 0; j < nary; j++){
+				huffmanNodeChildren[i][j] = -1;
+			}
+		}
+		
+		for(int i = 0; i < numberOfHuffmanNodes; i++){			
+			for(int n = 0; n < nary; n++){
+				if(lowestIndexLeft >= 0){
+					if(count[lowestIndexLeft] < count[lowestIndexRight]){
+						minIndexes[n] = lowestIndexLeft;
+						lowestIndexLeft--;
+					}
+					else{
+						minIndexes[n] = lowestIndexRight;
+						lowestIndexRight++;
+					}
+				}
+				else{
+					minIndexes[n] = lowestIndexRight;
+					lowestIndexRight++;
+				}				
+			}	
+			count[i + words.size()] = 0;
+			int level = 0;
+			for(int n = 0; n < nary; n++){					
+				if(minIndexes[n]<words.size()+numberOfHuffmanNodes-1){
+					count[i + words.size()]+=count[minIndexes[n]];
+					parentIndexes[minIndexes[n]] = i + words.size();
+					codeAtPoint[minIndexes[n]] = n;
+					if(huffmanNodeChildren[i][n]!=-1){
+						throw new RuntimeException("repeated node found");
+					}
+					huffmanNodeChildren[i][n] = minIndexes[n];
+					nodeNumberOfChildren[i]++;					
+					if(minIndexes[n] >= words.size()){
+						if(nodeLevel[minIndexes[n]-words.size()] > level){
+							level = nodeLevel[minIndexes[n]-words.size()];
+						}
+						nodeCount[i] += nodeCount[minIndexes[n]-words.size()];
+					}
+					else{
+						nodeCount[i] += getEntryFromId(minIndexes[n]).count;
+					}					
+				}
+			}
+			nodeLevel[i] = level+1;
+			
+		}
+
+		int totalNumberOfNodes = words.size() + numberOfHuffmanNodes;
+		for (int i = 0; i < words.size(); i++){
+			int index = i;
+			int codeBit = 0;
+			ArrayList<Integer> code = new ArrayList<Integer>();
+			ArrayList<Integer> points = new ArrayList<Integer>();
+			WordEntry entry = words.get(i);
+			while(index < totalNumberOfNodes - 1){
+				code.add(codeAtPoint[index]);
+				points.add(index);
+				index = parentIndexes[index];
+				codeBit++;
+			}
+
+			entry.code = new int[codeBit];
+			entry.point = new int[codeBit+1];
+			entry.point[0] = numberOfHuffmanNodes-1;
 			for(int j = 0; j < codeBit; j++){
 				entry.code[codeBit - j - 1] = code.get(j);
 				entry.point[codeBit - j] = points.get(j) - words.size();
@@ -429,4 +592,143 @@ public class Vocab {
 		}		
 		return words.get(sampling.next());
 	}
+	
+	public int[] getHuffmanNodeChildren(int nodeId){
+		return huffmanNodeChildren[nodeId];
+	}
+
+	public int getHuffmanNodeNumberOfChildren(int nodeId){
+		return nodeNumberOfChildren[nodeId];
+	}
+	
+	public int getNumberOfHuffmanNodes() {
+		return numberOfHuffmanNodes;
+	}
+	
+	public void printHuffmanTree(){
+		int maxLevel = nodeLevel[numberOfHuffmanNodes-1]+1;
+		LinkedList<Integer>[] nodesPerLevel = new LinkedList[maxLevel];
+		for(int i = maxLevel-1; i >= 0; i--){
+			nodesPerLevel[i] = new LinkedList<Integer>();
+		}
+		for(int i = 0; i < getTypes(); i++){
+			nodesPerLevel[0].add(i);
+		}
+		for(int i = 0; i < numberOfHuffmanNodes; i++){
+			nodesPerLevel[nodeLevel[i]].addFirst(i);
+		}
+
+//		long score = 0;
+//		for(Node node : nodes){
+//			if(node != null)
+//			nodesPerLevel[node.level-1].addLast(node);
+//			score+=node.operationsForSoftmax();
+//		}
+//		
+//		System.err.println("------------------");			
+//		System.err.println("---score: " + score + " --------------");
+//		System.err.println("------------------");
+		
+		String[] outputPerLevel = new String[maxLevel];
+		int[] leftOffsetPerNode = new int[getTypes() + numberOfHuffmanNodes];
+		int[] rightOffsetPerNode = new int[getTypes() + numberOfHuffmanNodes];
+		for(int i = 0; i < maxLevel; i++){
+			String output = "";
+			for(int node : nodesPerLevel[i]){
+				if(i == 0){
+					output += "    ";
+					leftOffsetPerNode[node] = output.length();
+					output+= node+"-"+getEntryFromId(node).word + "(" + getEntryFromId(node).count + ")";
+					rightOffsetPerNode[node] = output.length();
+					output += "    ";
+				}
+				else{
+					int[] lefts = new int[nodeNumberOfChildren[node]];
+					int[] rights = new int[nodeNumberOfChildren[node]];
+					for(int j = 0 ; j < nodeNumberOfChildren[node]; j++){
+						lefts[j] = leftOffsetPerNode[huffmanNodeChildren[node][j]];
+						rights[j] = rightOffsetPerNode[huffmanNodeChildren[node][j]];
+					}
+					
+					int left = MathUtils.min(lefts);
+					int right = MathUtils.max(rights);
+//					String nodeStr = node.children.getFirst().id + "-" + node.toString() + "-" + node.children.getLast().id;
+					String nodeStr = (node + words.size()) + "("+nodeCount[node] + ")";
+					leftOffsetPerNode[node + words.size()] = left + ((right - left - nodeStr.length())/2);
+					rightOffsetPerNode[node + words.size()] = left + ((right - left + nodeStr.length())/2);
+					while(output.length()<left){
+						output+=" ";
+					}
+					output+="|";
+					while(output.length()<leftOffsetPerNode[node + words.size()]-1){
+						output+="-";
+					}						
+					output+=nodeStr;
+					while(output.length()<right-1){
+						output+="-";
+					}		
+					output+="|";						
+				}
+			}
+			outputPerLevel[i] = output;
+		}
+		for(int i = maxLevel-1; i >= 0; i--){
+			System.err.println(outputPerLevel[i]);
+		}
+		System.err.println("------------------");
+	}
+	
+	public static void main(String[] args){
+		Vocab vocab = new Vocab();
+		vocab.addWordToVocab("p", 11);
+		vocab.addWordToVocab("tiger", 10);
+		vocab.addWordToVocab("monkey", 7);
+		vocab.addWordToVocab("cat", 3);
+		vocab.addWordToVocab("dog", 3);
+		vocab.addWordToVocab("mouse", 2);
+		vocab.addWordToVocab("spider", 1);
+		vocab.addWordToVocab("bat", 1);
+		vocab.addWordToVocab("rhino", 1);
+//		vocab.addWordToVocab("whale", 1);
+//		vocab.addWordToVocab("eagle", 1);
+//		vocab.addWordToVocab("dove", 1);
+//		vocab.addWordToVocab("rat", 1);
+//		vocab.addWordToVocab("pidgeon", 1);
+//		vocab.addWordToVocab("ant", 1);
+//		vocab.addWordToVocab("python", 1);
+		vocab.sortVocabByCount();
+		vocab.generateHuffmanCodesForNAryTree(2);
+		vocab.printWordCounts();
+		vocab.printHuffmanTree();
+		
+		String tmpFile = "/tmp/file";
+		PrintStream out = IOUtils.getPrintStream(tmpFile);
+		vocab.saveVocab(out);
+		out.close();
+		
+		BufferedReader in = IOUtils.getReader(tmpFile);
+		Vocab loaded = Vocab.loadVocab(in);
+		loaded.printHuffmanTree();
+	}
+
+	public int[] getHuffmanNodesForEntry(WordEntry expectedEntry) {
+		int[] ret = new int[expectedEntry.code.length];
+		for(int i = 0; i < ret.length; i++){
+			ret[i] = expectedEntry.point[i];
+		}
+		return ret;
+	}
+
+	public int getInitialHuffmanNode() {
+		return numberOfHuffmanNodes-1;
+	}
+
+	public boolean isHuffmanNode(int id) {
+		return id >= getTypes();
+	}
+
+	public int idToHuffmanNode(int id) {
+		return id - getTypes();
+	}
+	
 }

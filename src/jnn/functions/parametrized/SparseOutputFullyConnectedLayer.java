@@ -10,7 +10,7 @@ import jnn.mapping.OutputMappingDenseToSparse;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
 import jnn.training.GlobalParameters;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -123,7 +123,7 @@ public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSpa
 
 	//sparse output
 	public static void test(){
-		TreeInference inference = new TreeInference(0);
+		GraphInference inference = new GraphInference(0, true);
 
 		SparseOutputFullyConnectedLayer connectedLayer = new SparseOutputFullyConnectedLayer(3, 5);
 		DenseFullyConnectedLayer connectedLayer2 = new DenseFullyConnectedLayer(3, 5);
@@ -190,7 +190,7 @@ public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSpa
 	
 	//check it does not take more time for more outputs
 	public static void test2(){
-		TreeInference inference = new TreeInference(0);
+		GraphInference inference = new GraphInference(0, true);
 
 		SparseOutputFullyConnectedLayer connectedLayer = new SparseOutputFullyConnectedLayer(3, 500000);
 

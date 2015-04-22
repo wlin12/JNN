@@ -1,15 +1,23 @@
-package jnn.functions.composite.lstm;
+package jnn.functions.composite.lstm.aux;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintStream;
 
 import jnn.functions.parametrized.DenseFullyConnectedLayer;
 import jnn.functions.parametrized.StaticLayer;
 
 public class LSTMParameters {
-	DenseFullyConnectedLayer inputTransformLayer;
-	DenseFullyConnectedLayer forgetTransformLayer;
-	DenseFullyConnectedLayer outputTransformLayer;
-	DenseFullyConnectedLayer cellTransformLayer;
-	StaticLayer initialStateLayer;
-	StaticLayer initialCellLayer;
+	public DenseFullyConnectedLayer inputTransformLayer;
+	public DenseFullyConnectedLayer forgetTransformLayer;
+	public DenseFullyConnectedLayer outputTransformLayer;
+	public DenseFullyConnectedLayer cellTransformLayer;
+	public StaticLayer initialStateLayer;
+	public StaticLayer initialCellLayer;
+	
+	private LSTMParameters() {
+		
+	}
 	
 	public LSTMParameters(int inputDim, int stateDim) {
 		inputTransformLayer = new DenseFullyConnectedLayer(inputDim+stateDim, stateDim);
@@ -42,6 +50,27 @@ public class LSTMParameters {
 		System.err.println(initialCellLayer);
 		System.err.println(initialStateLayer);
 	}
+
+	public void save(PrintStream out){
+		out.println("lstm params");
+		initialCellLayer.save(out);
+		initialStateLayer.save(out);
+		inputTransformLayer.save(out);
+		forgetTransformLayer.save(out);
+		cellTransformLayer.save(out);
+		outputTransformLayer.save(out);
+	}
 	
+	public static LSTMParameters load(BufferedReader in){
+		try{in.readLine();}catch(IOException e){throw new RuntimeException();};
+		LSTMParameters params = new LSTMParameters();
+		params.initialCellLayer = StaticLayer.load(in);
+		params.initialStateLayer = StaticLayer.load(in);
+		params.inputTransformLayer = DenseFullyConnectedLayer.load(in);
+		params.forgetTransformLayer = DenseFullyConnectedLayer.load(in);
+		params.cellTransformLayer = DenseFullyConnectedLayer.load(in);
+		params.outputTransformLayer = DenseFullyConnectedLayer.load(in);
+		return params;
+	}
 }
 

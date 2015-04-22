@@ -92,6 +92,34 @@ public class SerializeUtils {
 		out.println();
 	}
 	
+	public static void saveIntArray(Integer[] array, PrintStream out) {
+		int dim = array.length;
+		out.println(dim);
+		for(int i = 0; i < dim; i++){
+			out.print(array[i]);
+			if(i != dim - 1){
+				out.print(" ");
+			}
+		}
+		out.println();
+	}
+	
+	public static void saveIntMatrix(int[][] array, PrintStream out) {
+		int xDim = array.length;
+		int yDim = array[0].length;
+		out.println(xDim);
+		out.println(yDim);
+		for(int i = 0; i < xDim; i++){
+			for(int j = 0; j < yDim; j++){
+				out.print(array[i][j]);				
+				if(i != xDim - 1 || j != yDim - 1){
+					out.print(" ");
+				}
+			}
+		}
+		out.println();
+	}
+	
 	public static void saveBooleanArray(boolean[] array, PrintStream out) {
 		int dim = array.length;
 		out.println(dim);
@@ -144,6 +172,24 @@ public class SerializeUtils {
 			int[] ret = new int[dim];
 			for(int i = 0; i < ret.length; i++){
 				ret[i] = Integer.parseInt(vals[i]);
+			}
+			return ret;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public static int[][] loadIntMatrix(BufferedReader in){
+		try {
+			int dimX = Integer.parseInt(in.readLine());
+			int dimY = Integer.parseInt(in.readLine());
+			String[] vals = in.readLine().split("\\s+");
+			int[][] ret = new int[dimX][dimY];
+			int pos = 0;
+			for(int i = 0; i < dimX; i++){
+				for(int j = 0; j < dimY; j++){
+					ret[i][j] = Integer.parseInt(vals[pos++]);
+				}
 			}
 			return ret;
 		} catch (IOException e) {

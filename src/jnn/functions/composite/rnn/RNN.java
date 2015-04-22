@@ -1,10 +1,16 @@
 package jnn.functions.composite.rnn;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintStream;
+
+import jnn.features.DenseFeatureMatrix;
+import jnn.features.DenseFeatureVector;
 import jnn.functions.DenseArrayToDenseArrayTransform;
 import jnn.functions.DenseArrayToDenseTransform;
+import jnn.functions.nonparametrized.CopyLayer;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
 import jnn.functions.nonparametrized.TanSigmoidLayer;
-import jnn.functions.parametrized.CopyLayer;
 import jnn.functions.parametrized.DenseFullyConnectedLayer;
 import jnn.functions.parametrized.Layer;
 import jnn.functions.parametrized.StaticLayer;
@@ -14,7 +20,8 @@ import jnn.mapping.OutputMappingDenseArrayToDenseArray;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.neuron.DenseNeuronArray;
 import jnn.training.GlobalParameters;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
+import util.IOUtils;
 import util.PrintUtils;
 import util.RandomUtils;
 
@@ -25,14 +32,14 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 
 	//combiner Layer
 	DenseFullyConnectedLayer combiner;
-	
+
 	public int inputDim;
 	public int stateDim;
 	public int outputDim;
 
 	public int type_forward = 2; // 0 -> none, 1 -> no_center_word, 2 -> with_center_word
 	public int type_backward = 2; // 0 -> none, 1 -> no_center_word, 2 -> with_center_word
-	
+
 	public int outputSigmoid = 2; // 0 -> none, 1 -> sigmoid, 2 -> tanh;
 	private static final String FORWARDKEY = "forwardblocks";
 	private static final String BACKWARDKEY = "backwardblocks";
@@ -43,17 +50,17 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 		this.inputDim = inputDim;
 		this.stateDim = stateDim;
 		this.outputDim = outputDim;
-		
+
 		parameters = new RNNParameters(inputDim, stateDim);
 		parametersBackward = new RNNParameters(inputDim, stateDim);
 
 		combiner = new DenseFullyConnectedLayer(stateDim*2, outputDim);
 		combiner.initializeForTanhSigmoid();
-		
+
 	}
-	
+
 	public void buildInference(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 
 		// add input units
 		for(int i = 0; i < input.length; i++){
@@ -63,11 +70,12 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 
 		if(type_forward != 0){
 			DenseNeuronArray initialState = new DenseNeuronArray(stateDim);
-			inference.addNeurons(1, initialState);
-			
-//			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parameters.initialStateLayer);
-//			inference.addMapping(0, 1, initialStateMapping);
-//
+			initialState.init();
+			inference.addNeurons(1, initialState);			
+
+			//			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parameters.initialStateLayer);
+			//			inference.addMapping(0, 1, initialStateMapping);
+			//
 
 			RNNBlock blockForward = new RNNBlock(initialState, startLevel);
 			RNNBlock[] blocksForward = new RNNBlock[input.length];
@@ -80,13 +88,14 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 		}
 		if(type_backward != 0){
 			DenseNeuronArray initialState = new DenseNeuronArray(stateDim);
+			initialState.init();
 			inference.addNeurons(1, initialState);
 
-//			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parametersBackward.initialStateLayer);
-//			inference.addMapping(0, 1, initialStateMapping);
-//
-//			OutputMappingVoidToDense initialCellMapping = new OutputMappingVoidToDense(initialCell, parametersBackward.initialCellLayer);
-//			inference.addMapping(0, 1, initialCellMapping);
+			//			OutputMappingVoidToDense initialStateMapping = new OutputMappingVoidToDense(initialState, parametersBackward.initialStateLayer);
+			//			inference.addMapping(0, 1, initialStateMapping);
+			//
+			//			OutputMappingVoidToDense initialCellMapping = new OutputMappingVoidToDense(initialCell, parametersBackward.initialCellLayer);
+			//			inference.addMapping(0, 1, initialCellMapping);
 
 			RNNBlock blockBackward = new RNNBlock(initialState, startLevel);
 			RNNBlock[] blocksBackward = new RNNBlock[input.length];
@@ -98,9 +107,9 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 			map.setForwardParam(BACKWARDKEY, blocksBackward);
 		}
 	}
-	
+
 	public void buildCombinerSequence(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		RNNBlock[] blocksForward = (RNNBlock[])map.getForwardParam(FORWARDKEY);
 		RNNBlock[] blocksBackward = (RNNBlock[])map.getForwardParam(BACKWARDKEY);
 
@@ -163,9 +172,9 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 			throw new RuntimeException("unknown sigmoid function");
 		}
 	}
-	
+
 	public void buildCombinerFinalState(DenseNeuronArray[] input, int inputStart, int inputEnd, Mapping map){
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		RNNBlock[] blocksForward = (RNNBlock[])map.getForwardParam(FORWARDKEY);
 		RNNBlock[] blocksBackward = (RNNBlock[])map.getForwardParam(BACKWARDKEY);
 
@@ -195,7 +204,7 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 	@Override
 	public void forward(DenseNeuronArray[] input, int inputStart, int inputEnd,
 			DenseNeuronArray[] output, int outputStart, int outputEnd, OutputMappingDenseArrayToDenseArray map) {
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		buildInference(input, inputStart, inputEnd, map);
 		buildCombinerSequence(input, inputStart, inputEnd, map);
 		inference.init();
@@ -209,12 +218,12 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 			}
 		}
 	}
-	
+
 	@Override
 	public void forward(DenseNeuronArray[] input, int inputStart, int inputEnd,
 			DenseNeuronArray output, int outputStart, int outputEnd,
 			OutputMappingDenseArrayToDense map) {
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		buildInference(input, inputStart, inputEnd, map);
 		buildCombinerFinalState(input, inputStart, inputEnd, map);
 		inference.init();
@@ -233,7 +242,7 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 
 		DenseNeuronArray[] blocks = (DenseNeuronArray[])map.getForwardParam(COMBINEDKEY);
 
-		TreeInference inference = map.getSubInference();
+		GraphInference inference = map.getSubInference();
 		for(int i = 0; i < output.length; i++){
 			DenseNeuronArray outputI = output[i];
 			for(int d = 0; d < outputDim; d++){	
@@ -243,13 +252,13 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 
 		inference.backward();
 	}	
-	
+
 	@Override
 	public void backward(DenseNeuronArray[] input, int inputStart,
 			int inputEnd, DenseNeuronArray output, int outputStart,
 			int outputEnd, OutputMappingDenseArrayToDense mapping) {
-		
-		TreeInference inference = mapping.getSubInference();
+
+		GraphInference inference = mapping.getSubInference();
 		DenseNeuronArray blockCombinedTan = (DenseNeuronArray)mapping.getForwardParam(COMBINEDFINALBLOCKKEY);		
 
 		for(int d = 0; d < outputDim; d++){	
@@ -266,15 +275,35 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 		combiner.updateWeights(learningRate, momentum);
 	}	
 
-	//	public void save(PrintStream out) {
-	//		transformLayer.save(out);
-	//		initialLayer.save(out);
-	//	}
-	//	
-	//	public void load(Scanner reader) {
-	//		transformLayer.load(reader);
-	//		initialLayer.load(reader);
-	//	}
+	public void save(PrintStream out) {
+		out.println(inputDim);
+		out.println(stateDim);
+		out.println(outputDim);
+		out.println(type_forward);
+		out.println(type_backward);
+		out.println(outputSigmoid);
+		parameters.save(out);
+		parametersBackward.save(out);
+		combiner.save(out);
+	}
+
+	public static RNN load(BufferedReader in) {
+		try {
+			int inputDim = Integer.parseInt(in.readLine());
+			int stateDim = Integer.parseInt(in.readLine());
+			int outputDim = Integer.parseInt(in.readLine());
+			RNN layer = new RNN(inputDim, stateDim, outputDim);
+			layer.type_forward = Integer.parseInt(in.readLine());
+			layer.type_backward = Integer.parseInt(in.readLine());
+			layer.outputSigmoid = Integer.parseInt(in.readLine());
+			layer.parameters = RNNParameters.load(in);
+			layer.parametersBackward = RNNParameters.load(in);
+			layer.combiner = DenseFullyConnectedLayer.load(in);
+			return layer;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public String toString() {
@@ -283,8 +312,8 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 		ret+=combiner;
 		return ret;
 	}
-	
-	public static void main(String[] args){
+
+	public static void main(String[] args) throws IOException{
 		int stateDim = 200;
 		int inputDim = 50;
 		int instances = 1000;
@@ -292,7 +321,15 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 		GlobalParameters.useAdagradDefault = true;
 		GlobalParameters.commitMethodDefault = 0;
 		RNN recNN = new RNN(inputDim, stateDim, stateDim);
-
+		
+		PrintStream out = IOUtils.getPrintStream("/tmp/file");
+		recNN.save(out);
+		out.close();
+		
+		BufferedReader in = IOUtils.getReader("/tmp/file");
+		recNN = RNN.load(in);
+		in.close();
+		
 		int len = 5;
 		double[][][] input = new double[instances][][];
 		double[][][] expected = new double[instances][][];
@@ -306,12 +343,12 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 				RandomUtils.initializeRandomArray(expected[i][j], 0, 1);				
 			}
 		}
-	
+
 		long startTime = System.currentTimeMillis();
 		for(int iteration = 0; iteration < 1000; iteration++){
 			long iterationStart = System.currentTimeMillis();
 			int i = iteration % instances;
-			TreeInference inference = new TreeInference(0);
+			GraphInference inference = new GraphInference(0, true);
 			DenseNeuronArray[] inputNeurons = new DenseNeuronArray[len];
 			DenseNeuronArray[] states = new DenseNeuronArray[len];
 			for(int j = 0; j < len; j++){
@@ -341,13 +378,13 @@ public class RNN extends Layer implements DenseArrayToDenseArrayTransform, Dense
 			//			recNN.transformLayer.printWeights();
 			//			
 			inference.commit(learningRate);
-//			inference.printNeurons();
+			//			inference.printNeurons();
 			//			recNN.printNeurons();
 
 			PrintUtils.printDoubleArray("output = ", states[len-1].copyAsArray(), false);
 			PrintUtils.printDoubleArray("error = ", states[len-1].copyErrorAsArray(), false);
 			System.err.println("error " + error);
-			
+
 			double avgTime = (System.currentTimeMillis() - startTime)/(iteration+1);
 			System.err.println("avg time " + avgTime);
 			System.err.println("this iteration " + (System.currentTimeMillis() - iterationStart));

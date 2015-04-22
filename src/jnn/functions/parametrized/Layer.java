@@ -1,5 +1,7 @@
 package jnn.functions.parametrized;
 
+import jnn.training.GraphInference;
+
 abstract public class Layer {
 
 	public long commitTime = 0;
@@ -39,28 +41,32 @@ abstract public class Layer {
 		backwardCalls++;
 	}
 	
+	public void backwardEnd(GraphInference inference){
+		
+	}
+	
 	public void printCommitTimeAndReset(){
 		if(commits>0){
-			System.err.println("took " + commitTime/1000 + " seconds to commit: " + commitTime/commits + " miliseconds per commit (" + commits + ")");			
+			System.err.println("took " + commitTime + " milliseconds to commit: " + commitTime/commits + " miliseconds per commit (" + commits + ")");			
 		}
 		else{
-			System.err.println("no update made... ");						
+			System.err.println("no commit made... ");						
 		}
 		commitTime=0;
 		commits=0;
 		if(forwardCalls>0){
-			System.err.println("took " + forwardTime/1000 + " seconds to forward: " + forwardTime/forwardCalls + " miliseconds per forward (" + forwardCalls + ")");			
+			System.err.println("took " + forwardTime + " milliseconds to forward: " + forwardTime/forwardCalls + " miliseconds per forward (" + forwardCalls + ")");			
 		}
 		else{
-			System.err.println("no update made... ");						
+			System.err.println("no forward made... ");						
 		}
 		forwardTime=0;
 		forwardCalls=0;
 		if(backwardCalls>0){
-			System.err.println("took " + backwardTime/1000 + " seconds to backward: " + backwardTime/backwardCalls + " miliseconds per backward (" + backwardCalls + ")");			
+			System.err.println("took " + backwardTime + " milliseconds to backward: " + backwardTime/backwardCalls + " miliseconds per backward (" + backwardCalls + ")");			
 		}
 		else{
-			System.err.println("no update made... ");						
+			System.err.println("no backward made... ");						
 		}
 		backwardTime=0;
 		backwardCalls=0;

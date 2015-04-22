@@ -12,7 +12,7 @@ import jnn.mapping.OutputMappingSparseToDense;
 import jnn.neuron.DenseNeuronArray;
 import jnn.neuron.SparseNeuronArray;
 import jnn.training.GlobalParameters;
-import jnn.training.TreeInference;
+import jnn.training.GraphInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -157,7 +157,7 @@ public class SparseFullyConnectedLayer extends Layer implements SparseToDenseTra
 	public static void test1(){
 		GlobalParameters.useAdadeltaDefault = true;
 		GlobalParameters.l2regularizerLambdaDefault = 0.000;
-		TreeInference inference = new TreeInference(0);
+		GraphInference inference = new GraphInference(0, true);
 
 		SparseFullyConnectedLayer layer = new SparseFullyConnectedLayer(3, 5);
 		double[][] weights = new double[][]{{1,2,3,4,5},{6,7,8,9,10}, {11,12,13,14,15}};

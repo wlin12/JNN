@@ -1,9 +1,10 @@
-package jnn.functions.parametrized;
+package jnn.functions.nonparametrized;
 
 import java.util.Set;
 
 import jnn.functions.DenseToDenseTransform;
 import jnn.functions.SparseToSparseTransform;
+import jnn.functions.parametrized.Layer;
 import jnn.mapping.OutputMappingDenseToDense;
 import jnn.mapping.OutputMappingSparseToSparse;
 import jnn.neuron.DenseNeuronArray;

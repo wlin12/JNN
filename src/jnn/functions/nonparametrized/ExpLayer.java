@@ -18,7 +18,7 @@ public class ExpLayer extends Layer implements DenseToDenseTransform{
 			DenseNeuronArray output, int outputStart, int outputEnd, OutputMappingDenseToDense mapping) {
 		INDArray inputRange = input.getOutputRange(inputStart, inputEnd);
 		INDArray inputRangeExp = exp.apply(inputRange);
-		output.setOutputRange(outputStart, outputEnd, inputRangeExp);
+		output.setOutputRange(outputStart, outputEnd, inputRangeExp);		
 	}
 	
 	@Override
