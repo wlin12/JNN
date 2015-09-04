@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Map.Entry;
@@ -15,7 +16,6 @@ import util.AliasMethod;
 import util.IOUtils;
 import util.MathUtils;
 import util.SerializeUtils;
-import vocab.ArbitraryHuffman.Node;
 
 public class Vocab {
 
@@ -134,7 +134,7 @@ public class Vocab {
 	public static Vocab loadVocab(BufferedReader in){
 		try {
 			Vocab vocab = new Vocab();
-			vocab.tokens = Integer.parseInt(in.readLine());
+			vocab.tokens = Long.parseLong(in.readLine());
 			vocab.types = Integer.parseInt(in.readLine());
 			vocab.minOccur = Integer.parseInt(in.readLine());
 			vocab.maxTokens = Integer.parseInt(in.readLine());
@@ -152,6 +152,32 @@ public class Vocab {
 				vocab.nodeCount = SerializeUtils.loadLongArray(in);				
 			}
 			return vocab;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public static HashSet<String> skipLoad(BufferedReader in){
+		try {
+			HashSet<String> ret = new HashSet<String>();
+			Vocab vocab = new Vocab();
+			vocab.tokens = Integer.parseInt(in.readLine());
+			vocab.types = Integer.parseInt(in.readLine());
+			vocab.minOccur = Integer.parseInt(in.readLine());
+			vocab.maxTokens = Integer.parseInt(in.readLine());
+			vocab.maxLenght = Integer.parseInt(in.readLine());
+			for(int i = 0; i < vocab.types; i++){
+				WordEntry wordEntry = WordEntry.load(in);
+				ret.add(wordEntry.word);
+			}
+			vocab.numberOfHuffmanNodes = Integer.parseInt(in.readLine());
+			if(vocab.numberOfHuffmanNodes > 0){
+				SerializeUtils.loadIntMatrix(in);
+				SerializeUtils.loadIntArray(in);
+				SerializeUtils.loadIntArray(in);
+				SerializeUtils.loadLongArray(in);				
+			}
+			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -593,6 +619,19 @@ public class Vocab {
 		return words.get(sampling.next());
 	}
 	
+	public WordEntry getRandomEntryByCount(int except) {
+		WordEntry ret = getRandomEntryByCount();
+		while(ret.id == except){
+			ret = getRandomEntryByCount();
+		}
+		return ret;
+	}
+	
+	public WordEntry getRandomEntryByCount(String except) {
+		return getRandomEntryByCount(getEntry(except).id);
+	}
+
+	
 	public int[] getHuffmanNodeChildren(int nodeId){
 		return huffmanNodeChildren[nodeId];
 	}
@@ -701,14 +740,17 @@ public class Vocab {
 		vocab.printWordCounts();
 		vocab.printHuffmanTree();
 		
-		String tmpFile = "/tmp/file";
-		PrintStream out = IOUtils.getPrintStream(tmpFile);
-		vocab.saveVocab(out);
-		out.close();
-		
-		BufferedReader in = IOUtils.getReader(tmpFile);
-		Vocab loaded = Vocab.loadVocab(in);
-		loaded.printHuffmanTree();
+		int num = 0;
+		int norm = 0;
+		for(int i = 0; i < 100000; i++){
+			int id = vocab.getRandomEntryByCount().id;
+			if(id == 0){
+				num++;
+			}
+			norm++;
+		}
+		System.err.println("real " + (vocab.getEntryFromId(0).count/(double)vocab.getTokens()));
+		System.err.println("sampled " + num/(double)norm);
 	}
 
 	public int[] getHuffmanNodesForEntry(WordEntry expectedEntry) {
@@ -729,6 +771,14 @@ public class Vocab {
 
 	public int idToHuffmanNode(int id) {
 		return id - getTypes();
+	}
+
+	public String[] getWordsFromIds(int[] subjectName) {
+		String[] ret = new String[subjectName.length];
+		for(int i = 0; i < ret.length; i++){
+			ret[i] = getEntryFromId(subjectName[i]).word;
+		}
+		return ret;
 	}
 	
 }

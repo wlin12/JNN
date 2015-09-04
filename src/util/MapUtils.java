@@ -78,6 +78,15 @@ public class MapUtils {
 		return bottomK;
 	}
 	
+	public static void add(HashMap<Integer, Double> map, int key, double val){
+		if(!map.containsKey(key)){
+			map.put(key, val);
+		}
+		else{
+			map.put(key, map.get(key) + val);
+		}
+	}
+	
 	public static void add(HashMap<String, Double> map, String key, double val){
 		if(!map.containsKey(key)){
 			map.put(key, val);

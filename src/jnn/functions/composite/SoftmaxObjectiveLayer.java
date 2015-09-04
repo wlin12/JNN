@@ -30,14 +30,20 @@ public class SoftmaxObjectiveLayer extends AbstractSofmaxObjectiveLayer implemen
 	int inputDim;
 	String UNK;
 	int dropoutStartId;
+	boolean stochasticDropout = false;
 
 	DenseFullyConnectedLayer inputToVocab;	
 
 	public SoftmaxObjectiveLayer(Vocab vocab, int inputDim, String UNK) {
+		this(vocab, inputDim, UNK, false);
+	}
+	
+	public SoftmaxObjectiveLayer(Vocab vocab, int inputDim, String UNK, boolean stochasticDropout) {
 		super();
 		this.vocab = vocab;
 		this.inputDim = inputDim;
 		this.UNK = UNK;
+		this.stochasticDropout = stochasticDropout;
 		inputToVocab = new DenseFullyConnectedLayer(inputDim, vocab.getTypes());
 		dropoutStartId = (int)(0.95*vocab.getTypes());
 	}
@@ -62,7 +68,7 @@ public class SoftmaxObjectiveLayer extends AbstractSofmaxObjectiveLayer implemen
 		output.setOutput(vocab.getEntryFromId(outputNeurons.maxIndex()).word);
 		if(output.getExpected() != null){
 			WordEntry expectedEntry = vocab.getEntry(output.getExpected());
-			if(expectedEntry==null || (mapping.getSubInference().isTrain() && expectedEntry.id > dropoutStartId && FastMath.random() > 0.5)){
+			if(expectedEntry==null){
 				expectedEntry = vocab.getEntry(UNK);
 			}
 			int expectedIndex = expectedEntry.id;
@@ -71,7 +77,7 @@ public class SoftmaxObjectiveLayer extends AbstractSofmaxObjectiveLayer implemen
 				objective.addNegativeSoftmaxError(mapping.getSubInference().getNorm());			
 			}
 			else{
-				objective.addSoftmaxError(mapping.getSubInference().getNorm());			
+				objective.addSoftmaxError(mapping.getSubInference().getNorm());
 			}
 			output.setScore(objective.getLL());
 		}
@@ -96,7 +102,7 @@ public class SoftmaxObjectiveLayer extends AbstractSofmaxObjectiveLayer implemen
 			if(output[w].getExpected() != null){
 
 				WordEntry expectedEntry = vocab.getEntry(output[w].getExpected());
-				if(expectedEntry==null || (mapping.getSubInference().isTrain() && expectedEntry.id > dropoutStartId && FastMath.random() > 0.5)){
+				if(expectedEntry==null){
 					expectedEntry = vocab.getEntry(UNK);
 				}
 				int expectedIndex = expectedEntry.id;

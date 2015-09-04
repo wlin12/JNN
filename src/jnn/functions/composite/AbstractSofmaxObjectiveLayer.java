@@ -19,7 +19,7 @@ import util.TopNList;
 import vocab.Vocab;
 
 abstract public class AbstractSofmaxObjectiveLayer extends Layer implements DenseToStringTransform, DenseArrayToStringArrayTransform{
-	
+
 	abstract public String decode(DenseNeuronArray input);
 
 	abstract public void save(PrintStream out);

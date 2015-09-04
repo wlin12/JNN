@@ -10,25 +10,99 @@ public class TopologicalSort {
 
 	static void dfs(List<Integer>[] graph, boolean[] used, List<Integer> res, int u) {
 		used[u] = true;
-		for (int v : graph[u])
-			if (!used[v])
+		for (int v : graph[u]){
+			if (!used[v]){
 				dfs(graph, used, res, v);
+			}
+		}
 		res.add(u);
+	}
+	
+	static void dfsIterative(List<Integer>[] graph, boolean[] used, LinkedList<Integer> res, int u){
+		LinkedList<Integer> stack = new LinkedList<Integer>();
+		LinkedList<Integer> toExpand = new LinkedList<Integer>();
+		toExpand.add(u);
+		while(!toExpand.isEmpty()){
+			int v = toExpand.removeFirst();
+			if(used[v]){
+				continue;
+			}			
+			stack.add(v);
+			used[v] = true;
+			for(int k : graph[v]){
+				if(!used[k])
+				{
+					toExpand.addFirst(k);
+				}
+			}
+		}
+		Iterator<Integer> it = stack.descendingIterator();
+		while(it.hasNext()){
+			res.add(it.next());
+		}
 	}
 
 	public static List<Integer> topologicalSort(List<Integer>[] graph) {
 		int n = graph.length;
 		boolean[] used = new boolean[n];
-		List<Integer> res = new ArrayList<>();
-		for (int i = 0; i < n; i++)
+		LinkedList<Integer> res = new LinkedList<>();
+		used = new boolean[n];
+		for (int i = 0; i < n; i++){
 			if (!used[i])
 				dfs(graph, used, res, i);
+		}
+				
 		Collections.reverse(res);
 		return res;
 	}
 	
+	public static List<Integer> topologicalSortBFS(List<Integer>[] graph) {
+		HashSet<Integer>[] incoming = new HashSet[graph.length];
+		int edges = 0;
+		HashSet<Integer> nodes = new HashSet<Integer>();
+		for(int i = 0; i < graph.length; i++){
+			incoming[i] = new HashSet<Integer>();
+			nodes.add(i);
+		}
+
+		//build reverse graph
+		for(int i = 0; i < graph.length; i++){
+			for(int v : graph[i]){
+				incoming[v].add(i);
+				edges++;
+			}
+		}
+		
+		List<Integer> ret = new LinkedList<Integer>();
+		
+		LinkedList<Integer> S = new LinkedList<Integer>();
+		for(int n : nodes){
+			if(incoming[n].size() == 0){
+				S.add(n);
+			}
+		}
+		
+		while(S.size()>0){
+			int n = S.removeFirst();
+			nodes.remove(n);
+			for(int v : graph[n]){
+				incoming[v].remove(n);
+				edges--;
+				if(incoming[v].size()==0){
+					S.add(v);
+				}
+			}
+			ret.add(n);
+		}
+		if(edges > 0){
+			throw new RuntimeException("found cycles in the graph");
+		}
+		return ret;
+	}
+
+	
 	public static List<List<Integer>> blockTopologicalSort(List<Integer>[] graph){
-		List<Integer> topologicalSort = topologicalSort(graph);
+		List<Integer> topologicalSort = topologicalSortBFS(graph);
 		List<List<Integer>> ret = new LinkedList<List<Integer>>();
 		
 		int[] nodeToTimetamp = new int[topologicalSort.size()];
@@ -108,7 +182,7 @@ public class TopologicalSort {
 
 	// Usage example
 	public static void main(String[] args) {
-		int n = 5;
+		int n = 6;
 		List<Integer>[] g = new List[n];
 		for (int i = 0; i < n; i++) {
 			g[i] = new ArrayList<>();
@@ -117,11 +191,12 @@ public class TopologicalSort {
 		g[0].add(1);
 		g[1].add(2);
 		g[3].add(1);
-		g[4].add(1);
 		g[3].add(2);
+		g[3].add(4);
+		g[5].add(0);
 
-		System.out.println(topologicalSort(g));
-		System.out.println(blockTopologicalSort(g));
+		System.out.println(topologicalSortBFS(g));
+		//System.out.println(blockTopologicalSort(g));
 		
 		
 	}

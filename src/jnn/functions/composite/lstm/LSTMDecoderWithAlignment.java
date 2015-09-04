@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 
-import scala.annotation.meta.param;
 import util.IOUtils;
 import jnn.decoder.DecoderInterface;
 import jnn.decoder.stackbased.StackBasedDecoder;
@@ -38,8 +37,6 @@ public class LSTMDecoderWithAlignment extends Layer implements LSTMStateTransfor
 	LSTMParameters parameters;
 	DenseFullyConnectedLayer stateToAlignment;
 	DenseFullyConnectedLayer sourceToAlignment;	
-	DenseFullyConnectedLayer posToAlignment;
-	DenseFullyConnectedLayer relPosToAlignment;
 	DenseFullyConnectedLayer alignmentToScore;
 
 	private static final String STATES = "states";
@@ -49,26 +46,20 @@ public class LSTMDecoderWithAlignment extends Layer implements LSTMStateTransfor
 	int stateDim;
 	int sourceDim;
 	int alignmentDim;
-	int fertilityDim;
-
-	public boolean useFertility = false;
 
 	private LSTMDecoderWithAlignment() {
 	}
 
-	public LSTMDecoderWithAlignment(int inputDim, int sourceDim, int alignmentDim, int fertilityDim, int stateDim) {
+	public LSTMDecoderWithAlignment(int inputDim, int sourceDim, int alignmentDim, int stateDim) {
 
 		this.inputDim = inputDim;
 		this.stateDim = stateDim;
 		this.sourceDim = sourceDim;
 		this.alignmentDim = alignmentDim;
-		this.fertilityDim = fertilityDim;
 		parameters = new LSTMParameters(inputDim+sourceDim, stateDim);
 
 		stateToAlignment = new DenseFullyConnectedLayer(stateDim, alignmentDim);
 		sourceToAlignment = new DenseFullyConnectedLayer(sourceDim, alignmentDim);
-		posToAlignment = new DenseFullyConnectedLayer(2, alignmentDim);
-		relPosToAlignment = new DenseFullyConnectedLayer(2, alignmentDim);
 		alignmentToScore = new DenseFullyConnectedLayer(alignmentDim, 1);
 		alignmentToScore.useBias = false; //softmax does not need this
 
@@ -151,7 +142,6 @@ public class LSTMDecoderWithAlignment extends Layer implements LSTMStateTransfor
 			inference.addNeurons(0, pos);
 
 			//			inference.addMapping(new OutputMappingDenseToDense(relPos, alignment[a], relPosToAlignment));
-			inference.addMapping(new OutputMappingDenseToDense(pos, alignment[a], posToAlignment));
 			inference.addMapping(new OutputMappingDenseToDense(alignmentSources[a], alignment[a], CopyLayer.singleton));
 			inference.addMapping(new OutputMappingDenseToDense(alignmentState, alignment[a], CopyLayer.singleton));
 			inference.addMapping(new OutputMappingDenseToDense(alignment[a], alignmentTan[a], TanSigmoidLayer.singleton));
@@ -290,8 +280,6 @@ public class LSTMDecoderWithAlignment extends Layer implements LSTMStateTransfor
 		parameters.update(learningRate, momentum);
 		stateToAlignment.updateWeights(learningRate, momentum);
 		sourceToAlignment.updateWeights(learningRate, momentum);
-		posToAlignment.updateWeights(learningRate, momentum);
-		relPosToAlignment.updateWeights(learningRate, momentum);
 		alignmentToScore.updateWeights(learningRate, momentum);
 		//alignmentToScore.normalizeWeights();
 
@@ -306,14 +294,10 @@ public class LSTMDecoderWithAlignment extends Layer implements LSTMStateTransfor
 		out.println(stateDim);
 		out.println(sourceDim);
 		out.println(alignmentDim);
-		out.println(fertilityDim);
-		out.println(useFertility);
 
 		parameters.save(out);
 		stateToAlignment.save(out);
 		sourceToAlignment.save(out);
-		posToAlignment.save(out);
-		relPosToAlignment.save(out);
 		alignmentToScore.save(out);
 	}
 
@@ -324,13 +308,9 @@ public class LSTMDecoderWithAlignment extends Layer implements LSTMStateTransfor
 			decoder.stateDim = Integer.parseInt(in.readLine());
 			decoder.sourceDim = Integer.parseInt(in.readLine());
 			decoder.alignmentDim = Integer.parseInt(in.readLine());
-			decoder.fertilityDim = Integer.parseInt(in.readLine());
-			decoder.useFertility = Boolean.parseBoolean(in.readLine());
 			decoder.parameters = LSTMParameters.load(in);
 			decoder.stateToAlignment = DenseFullyConnectedLayer.load(in);
 			decoder.sourceToAlignment = DenseFullyConnectedLayer.load(in);
-			decoder.posToAlignment = DenseFullyConnectedLayer.load(in);
-			decoder.relPosToAlignment = DenseFullyConnectedLayer.load(in);
 			decoder.alignmentToScore = DenseFullyConnectedLayer.load(in);
 			return decoder;
 		}

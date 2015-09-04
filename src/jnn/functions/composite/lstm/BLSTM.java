@@ -51,6 +51,7 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 		parametersBackward = new LSTMParameters(inputDim, stateDim);
 
 		combiner = new DenseFullyConnectedLayer(stateDim*2, outputDim);
+		combiner.useBias = true;
 		combiner.initializeForTanhSigmoid();
 		
 	}
@@ -181,10 +182,7 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 		DenseNeuronArray blockCombined = new DenseNeuronArray(outputDim);
 		blockCombined.setName("combined final");
 		inference.addNeurons(combinedLevel+2, blockCombined);
-		DenseNeuronArray blockCombinedTan = new DenseNeuronArray(outputDim);		
-		blockCombinedTan.setName("combined final tan");
-		inference.addNeurons(combinedLevel+3, blockCombinedTan);
-
+				
 		if(type_forward != 0){
 			inference.addMapping(new OutputMappingDenseToDense(0,stateDim-1, 0, stateDim-1, blocksForward[input.length-1].hState, blockCombinedInput, CopyLayer.singleton));
 		}
@@ -192,9 +190,27 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 			inference.addMapping(new OutputMappingDenseToDense(0, stateDim-1, stateDim, stateDim*2-1, blocksBackward[0].hState, blockCombinedInput, CopyLayer.singleton));
 		}
 		inference.addMapping(new OutputMappingDenseToDense(blockCombinedInput, blockCombined, combiner));
-		inference.addMapping(new OutputMappingDenseToDense(blockCombined, blockCombinedTan, TanSigmoidLayer.singleton));
+		
+		if(outputSigmoid == 0){
+			map.setForwardParam(COMBINEDFINALBLOCKKEY, blockCombined);
+		}
+		else if(outputSigmoid == 1){
+			DenseNeuronArray blockCombinedSig = new DenseNeuronArray(outputDim);		
+			blockCombinedSig.setName("combined final logistic");
+			inference.addNeurons(combinedLevel+3, blockCombinedSig);
 
-		map.setForwardParam(COMBINEDFINALBLOCKKEY, blockCombinedTan);
+			inference.addMapping(new OutputMappingDenseToDense(blockCombined, blockCombinedSig, LogisticSigmoidLayer.singleton));
+			map.setForwardParam(COMBINEDFINALBLOCKKEY, blockCombinedSig);
+
+		}
+		else if(outputSigmoid == 2){
+			DenseNeuronArray blockCombinedTan = new DenseNeuronArray(outputDim);		
+			blockCombinedTan.setName("combined final tan");
+			inference.addNeurons(combinedLevel+3, blockCombinedTan);
+
+			inference.addMapping(new OutputMappingDenseToDense(blockCombined, blockCombinedTan, TanSigmoidLayer.singleton));
+			map.setForwardParam(COMBINEDFINALBLOCKKEY, blockCombinedTan);			
+		}
 	}
 
 	@Override
@@ -205,7 +221,7 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 		buildCombinerSequence(input, inputStart, inputEnd, map);
 		inference.init();
 		inference.forward();
-
+		
 		DenseNeuronArray[] blocks = (DenseNeuronArray[])map.getForwardParam(COMBINEDKEY);
 		for(int i = 0; i < output.length; i++){
 			DenseNeuronArray outputI = output[i];
@@ -213,6 +229,8 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 				outputI.addNeuron(d+outputStart, blocks[i].getNeuron(d));
 			}
 		}
+		LSTMBlock[] blocksForward = (LSTMBlock[])map.getForwardParam(FORWARDKEY);
+		LSTMBlock[] blocksBackward = (LSTMBlock[])map.getForwardParam(BACKWARDKEY);
 	}
 	
 	@Override
@@ -255,10 +273,10 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 			int outputEnd, OutputMappingDenseArrayToDense mapping) {
 		
 		GraphInference inference = mapping.getSubInference();
-		DenseNeuronArray blockCombinedTan = (DenseNeuronArray)mapping.getForwardParam(COMBINEDFINALBLOCKKEY);		
+		DenseNeuronArray representaton = (DenseNeuronArray)mapping.getForwardParam(COMBINEDFINALBLOCKKEY);		
 
 		for(int d = 0; d < outputDim; d++){	
-			blockCombinedTan.addError(d, output.getError(d+outputStart));
+			representaton.addError(d, output.getError(d+outputStart));
 		}
 
 		inference.backward();				
@@ -269,6 +287,7 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 		parameters.update(learningRate, momentum);
 		parametersBackward.update(learningRate, momentum);
 		combiner.updateWeights(learningRate, momentum);
+		
 	}	
 
 	@Override
@@ -398,12 +417,18 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 	public static BLSTM load(BufferedReader in) {
 		try {
 			int inputDim = Integer.parseInt(in.readLine());
+			System.err.println(inputDim);
 			int stateDim = Integer.parseInt(in.readLine());
+			System.err.println(stateDim);
 			int outputDim = Integer.parseInt(in.readLine());
+			System.err.println(outputDim);
 			BLSTM layer = new BLSTM(inputDim, stateDim, outputDim);
 			layer.type_forward = Integer.parseInt(in.readLine());
+			System.err.println(layer.type_forward);
 			layer.type_backward = Integer.parseInt(in.readLine());
-			layer.outputSigmoid = Integer.parseInt(in.readLine());
+			System.err.println(layer.type_backward);
+			layer.outputSigmoid = Integer.parseInt(in.readLine());			
+			System.err.println(layer.outputSigmoid);
 			layer.parameters = LSTMParameters.load(in);
 			layer.parametersBackward = LSTMParameters.load(in);
 			layer.combiner = DenseFullyConnectedLayer.load(in);

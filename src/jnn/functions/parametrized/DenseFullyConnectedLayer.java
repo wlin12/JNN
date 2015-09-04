@@ -69,6 +69,11 @@ public class DenseFullyConnectedLayer extends Layer implements DenseToDenseTrans
 		weights.normalizedInitializationHtan(inputDim+1, outputDim);
 		bias.normalizedInitializationHtan(inputDim+1, outputDim);		
 	}
+	
+	public void initializeForTanhSigmoid(int inputDim){
+		weights.normalizedInitializationHtan(inputDim+1, outputDim);
+		bias.normalizedInitializationHtan(inputDim+1, outputDim);		
+	}
 
 	public void initializeForLogisticSigmoid(){
 		weights.normalizedInitializationSigmoid(inputDim+1, outputDim);
@@ -76,16 +81,15 @@ public class DenseFullyConnectedLayer extends Layer implements DenseToDenseTrans
 	}
 
 	public void initializeUniform(){
-		weights.initializeUniform(-0.1,0.1);
-		bias.initializeUniform(-0.1,0.1);
+		weights.initializeUniform(-0.1d,0.1d);
+		bias.initializeUniform(-0.1d,0.1d);
 	}
 
 	public void propagate(DenseNeuronArray input, int inputStart, int inputEnd,
 			DenseNeuronArray output, int outputStart, int outputEnd, Mapping mapping){
 		INDArray W = weights.getWeights();
 		INDArray x = input.getOutputRange(inputStart, inputEnd);
-		INDArray yBias = bias.getWeights();
-
+		INDArray yBias = bias.getWeights();		
 		if(mapping.isTrain() && addNoise){
 			W = W.add(weights.genGaussianNoise(mapping.getId()));
 		}
@@ -94,9 +98,9 @@ public class DenseFullyConnectedLayer extends Layer implements DenseToDenseTrans
 
 		if(useBias){
 			if(mapping.isTrain() && addNoise){
-				yBias = yBias.add(bias.genGaussianNoise(mapping.getId()));
+				yBias.addi(bias.genGaussianNoise(mapping.getId()));
 			}
-			y = y.add(yBias);
+			y.addi(yBias);
 		}
 		output.setOutputRange(outputStart, outputEnd, y);	
 	}
@@ -117,7 +121,7 @@ public class DenseFullyConnectedLayer extends Layer implements DenseToDenseTrans
 		if(useBias){
 			bias.storeGradients(mapping.getId(), yGrad.dup());
 		}
-				weights.storeInputsAndOutputs(mapping.getId(), x, yGrad);
+		weights.storeInputsAndOutputs(mapping.getId(), x, yGrad);
 	}
 
 	@Override

@@ -144,8 +144,7 @@ public class LookupTable extends Layer implements SparseToDenseTransform, String
 				inputNeurons.addNeuron(word.getId(), 1);
 				buildNetwork(inputNeurons, 0, vocabSize-1, output[i], outputStart, outputEnd, mapping, key);
 			}
-		}
-		
+		}		
 		
 		mapping.getSubInference().init();
 		mapping.getSubInference().forward();

@@ -65,14 +65,15 @@ public class SparseFullyConnectedLayer extends Layer implements SparseToDenseTra
 	}
 
 	public void initializeUniform(){
-		weights.initializeUniform(-0.1,0.1);
+		weights.initializeUniform(-0.1d,0.1d);
 	}
 
 	@Override
 	public void forward(SparseNeuronArray input, int inputStart, int inputEnd,
 			DenseNeuronArray output, int outputStart, int outputEnd,
 			OutputMappingSparseToDense mapping) {
-		INDArray out = Nd4j.zeros(outputDim);
+//		INDArray out = Nd4j.zeros(outputDim); 
+		INDArray out = Nd4j.create(new double[outputDim]);
 		for(Entry<Integer, Double> entry : input.getNonZeroEntries()){
 			out.addi(weights.getUpdatedWeights(entry.getKey()));
 			out.muli(entry.getValue());

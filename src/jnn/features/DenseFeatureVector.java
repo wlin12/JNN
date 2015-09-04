@@ -7,9 +7,9 @@ import java.util.HashMap;
 
 import jnn.training.GlobalParameters;
 
-import org.apache.commons.math.util.FastMath;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;

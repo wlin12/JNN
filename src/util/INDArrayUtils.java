@@ -68,6 +68,18 @@ public class INDArrayUtils {
 		return ret;
 	}
 	
+	public static void addiScale(INDArray a, INDArray b, double scale){
+		for(int i = 0; i < a.size(0); i++){
+			a.putScalar(i, a.getDouble(i) + b.getDouble(i)*scale);
+		}
+	}
+	
+	public static void addi(INDArray a, INDArray b){
+		for(int i = 0; i < a.size(0); i++){
+			a.putScalar(i, a.getDouble(i) + b.getDouble(i));
+		}
+	}
+	
 	public static void main(String[] args){
 		INDArray zeroMean = Nd4j.zeros(3, 3);
 		double var = 0.01;

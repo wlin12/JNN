@@ -144,12 +144,24 @@ public class DenseNeuronArray extends NeuronArray{
 		}
 	}
 	
+	public void addNeuron(DenseNeuronArray neurons, int startSource, int startTarget, int len){
+		for(int i = 0; i < len; i++){
+			outputs.putScalar(i+startTarget, outputs.getDouble(i+startTarget) + neurons.getNeuron(i+startSource));			
+		}
+	}
+	
 	public double getError(int index){
 		return error.getDouble(index);
 	}
 
 	public void addError(DenseNeuronArray neurons, int startSource, int startTarget){
 		for(int i = 0; i < size; i++){
+			error.putScalar(i + startTarget, error.getDouble(i + startTarget) + neurons.getError(i + startSource));
+		}
+	}
+	
+	public void addError(DenseNeuronArray neurons, int startSource, int startTarget, int len){
+		for(int i = 0; i < len; i++){
 			error.putScalar(i + startTarget, error.getDouble(i + startTarget) + neurons.getError(i + startSource));
 		}
 	}
@@ -183,9 +195,21 @@ public class DenseNeuronArray extends NeuronArray{
 	
 	public void setOutputRange(int start, int end, INDArray vals){
 		if(start == 0 && end == size-1){
-			outputs.addi(vals);
+			INDArrayUtils.addi(outputs, vals);
 		}
 		else{
+			for(int i = start; i <= end; i++){
+				outputs.putScalar(i, outputs.getDouble(i) + vals.getDouble(i-start));
+			}
+		}
+	}
+	
+	public void setOutputRangeAfterMmul(int start, int end, INDArray x, INDArray y){
+		if(start == 0 && end == size-1){
+			x.mmuli(y, outputs);
+		}
+		else{
+			INDArray vals = x.mmul(y);
 			for(int i = start; i <= end; i++){
 				outputs.putScalar(i, outputs.getDouble(i) + vals.getDouble(i-start));
 			}
@@ -205,9 +229,21 @@ public class DenseNeuronArray extends NeuronArray{
 	
 	public void setErrorRange(int start, int end, INDArray vals){
 		if(start == 0 && end == size-1){
-			error.addi(vals);
+			INDArrayUtils.addi(error, vals);
 		}
 		else{
+			for(int i = start; i <= end; i++){
+				error.putScalar(i, error.getDouble(i) + vals.getDouble(i-start));
+			}
+		}
+	}
+	
+	public void setErrorRangeAfterMmul(int start, int end, INDArray x, INDArray y){
+		if(start == 0 && end == size-1){
+			x.mmuli(y, error);
+		}
+		else{
+			INDArray vals = x.mmul(y);
 			for(int i = start; i <= end; i++){
 				error.putScalar(i, error.getDouble(i) + vals.getDouble(i-start));
 			}

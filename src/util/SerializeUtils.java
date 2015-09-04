@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
@@ -92,6 +93,18 @@ public class SerializeUtils {
 		out.println();
 	}
 	
+	public static void saveStringArray(String[] array, PrintStream out) {
+		int dim = array.length;
+		out.println(dim);
+		for(int i = 0; i < dim; i++){
+			out.print(array[i]);
+			if(i != dim - 1){
+				out.print(" ");
+			}
+		}
+		out.println();
+	}
+	
 	public static void saveIntArray(Integer[] array, PrintStream out) {
 		int dim = array.length;
 		out.println(dim);
@@ -165,6 +178,20 @@ public class SerializeUtils {
 		return ret;
 	}
 	
+	public static double[] loadDoubleArray(BufferedReader in){
+		try {
+			int dim = Integer.parseInt(in.readLine());
+			String[] vals = in.readLine().split("\\s+");
+			double[] ret = new double[dim];
+			for(int i = 0; i < ret.length; i++){
+				ret[i] = Double.parseDouble(vals[i]);
+			}
+			return ret;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public static int[] loadIntArray(BufferedReader in){
 		try {
 			int dim = Integer.parseInt(in.readLine());
@@ -172,6 +199,20 @@ public class SerializeUtils {
 			int[] ret = new int[dim];
 			for(int i = 0; i < ret.length; i++){
 				ret[i] = Integer.parseInt(vals[i]);
+			}
+			return ret;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public static String[] loadStringArray(BufferedReader in){
+		try {
+			int dim = Integer.parseInt(in.readLine());
+			String[] vals = in.readLine().split("\\s+");
+			String[] ret = new String[dim];
+			for(int i = 0; i < ret.length; i++){
+				ret[i] = vals[i];
 			}
 			return ret;
 		} catch (IOException e) {
@@ -338,6 +379,25 @@ public class SerializeUtils {
 		}
 	}
 
+	public static void saveSet(HashSet<String> movies, PrintStream out) {
+		out.println(movies.size());
+		for(String s : movies){
+			out.println(s);
+		}
+	}
 
+	public static HashSet<String> loadSet(BufferedReader in){
+		try {
+			int size = Integer.parseInt(in.readLine());
+			HashSet<String> words = new HashSet<String>();
+			for(int i = 0; i < size; i++){
+				words.add(in.readLine());
+			}
+			return words;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
 
 }

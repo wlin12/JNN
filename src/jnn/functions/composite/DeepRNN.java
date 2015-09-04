@@ -41,6 +41,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 		for(int i = 0; i < hiddenLayers.size(); i++){
 			newLSTM.dims.add(dims.get(i+1));
 			newLSTM.hiddenLayers.add(hiddenLayers.get(i));
+			newLSTM.layerType.add(layerType.get(i));
 		}
 		newLSTM.dims.add(outputDim);
 		newLSTM.hiddenLayers.add(new BLSTM(dims.get(dims.size()-1), stateDim, outputDim));
@@ -53,6 +54,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 		for(int i = 0; i < hiddenLayers.size(); i++){
 			newLSTM.dims.add(dims.get(i+1));
 			newLSTM.hiddenLayers.add(hiddenLayers.get(i));
+			newLSTM.layerType.add(layerType.get(i));
 		}
 		newLSTM.dims.add(outputDim);
 		RNN rnn = null;
@@ -61,7 +63,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 		}
 		else if(type.equals("lstm")){
 			rnn = new BLSTM(dims.get(dims.size()-1), stateDim, outputDim);
-		}
+		}		
 		else if(type.equals("convolution")){
 			rnn = new ConvolutionLayer(2, dims.get(dims.size()-1), outputDim);
 		}
@@ -265,6 +267,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 			out.println(type);
 		}
 		Iterator<String> it = layerType.iterator();
+		
 		for(RNN rnn : hiddenLayers){
 			String type = it.next();
 			if(type.equals("rnn")){

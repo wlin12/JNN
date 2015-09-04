@@ -36,6 +36,12 @@ public class DenseRowFeatureMatrix {
 		updatedOnce = new boolean[numberOfRows];
 		zero = Nd4j.zeros(dim);
 	}
+	
+	public void setMomentum(boolean momentum){
+		for(int i = 0; i < numberOfRows; i++){
+			rows[i].useMomentum = momentum;
+		}
+	}
 
 	public void initializeUniform(double min, double max){
 		for(int i = 0; i < numberOfRows; i++){

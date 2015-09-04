@@ -126,6 +126,30 @@ public class ExpTable {
 		return output;
 	}
 	
+	public static double getExpTable(double input){
+		return singleton.expTable[singleton.getIndex(input)];
+	}
+	
+	public static double getExpTableApproximate(double input){
+		if(input > ExpTable.SingletonMaxExp){
+			return 1;
+		}
+		else if(input < -ExpTable.SingletonMaxExp){
+			return 0;
+		}
+		else{
+			return ExpTable.getExpTable(input);
+		}
+	}
+
+	public static boolean containsExpTable(double input){
+		return input < SingletonMaxExp && input > -SingletonMaxExp; 
+	}
+	
+	public static double getLogistic(double val){
+		return singleton.logTable[singleton.getIndex(val)];
+	}
+	
 	public static INDArray getExpNormTable(INDArray input){
 		INDArray output = Nd4j.zeros(input.shape());
 		double max = -Integer.MAX_VALUE;

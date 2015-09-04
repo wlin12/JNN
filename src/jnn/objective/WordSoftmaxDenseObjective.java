@@ -33,7 +33,7 @@ public class WordSoftmaxDenseObjective {
 			neurons.addError(key, (label - ExpTable.getExpSing((neurons.getNeuron(key))))*norm);			
 		}
 	}
-	
+
 	public double getError(){
 		double error = 0;
 		for(int key = 0; key < neurons.size; key++){
@@ -41,27 +41,27 @@ public class WordSoftmaxDenseObjective {
 		}
 		return error/neurons.size;
 	}
-	
+
 	public void addSoftmaxError(double norm){
-			INDArray expArray = ExpTable.getExpNormTable(neurons.getOutputRange(0, neurons.size-1));
-			INDArray errorArray = expArray.mul(-norm);		
-			neurons.setErrorRange(0, neurons.size-1, errorArray);
-			loglikelihood = FastMath.log(expArray.getDouble(expectedIndex));
-			neurons.addError(expectedIndex, norm);			
+		INDArray expArray = ExpTable.getExpNormTable(neurons.getOutputRange(0, neurons.size-1));
+		loglikelihood = FastMath.log(expArray.getDouble(expectedIndex));
+		expArray.muli(-norm);		
+		neurons.setErrorRange(0, neurons.size-1, expArray);
+		neurons.addError(expectedIndex, norm);			
 	}
-	
+
 	public void addNegativeSoftmaxError(double norm){
-//		INDArray expArray = exp.apply(neurons.getOutputRange(0, neurons.size-1));
-//		loglikelihood = FastMath.log(expArray.getDouble(expectedIndex));
-//		neurons.addError(expectedIndex, -norm);
-		
+		//		INDArray expArray = exp.apply(neurons.getOutputRange(0, neurons.size-1));
+		//		loglikelihood = FastMath.log(expArray.getDouble(expectedIndex));
+		//		neurons.addError(expectedIndex, -norm);
+
 		INDArray expArray = exp.apply(neurons.getOutputRange(0, neurons.size-1));
 		double wordProb = 1/(double)(neurons.len());
 		INDArray errorArray = expArray.mul(-norm).add(wordProb);	
 		neurons.setErrorRange(0, neurons.size-1, errorArray);
 		loglikelihood = FastMath.log(expArray.getDouble(expectedIndex));
 	}
-	
+
 	public static double[] getLikelihoodArray(DenseNeuronArray neurons){
 		double sum = 0;
 		for(int key = 0; key < neurons.size; key++){
@@ -78,7 +78,7 @@ public class WordSoftmaxDenseObjective {
 	public double getLL() {
 		return loglikelihood;
 	}
-	
+
 	public static void main(String[] args){
 		DenseNeuronArray input = new DenseNeuronArray(10);
 		input.init();
@@ -89,7 +89,7 @@ public class WordSoftmaxDenseObjective {
 		obj.addSoftmaxError(1);
 		System.err.println(input);
 		System.err.println(obj.getLL());
-		
+
 		INDArray inputArray = input.getOutputRange(0, 9);
 		SoftMax sm = new SoftMax();
 		INDArray outputArray = sm.apply(inputArray);
@@ -98,6 +98,6 @@ public class WordSoftmaxDenseObjective {
 		INDArray errorArray = expectedArray.sub(outputArray);
 		System.err.println(outputArray);
 		System.err.println(expectedArray.sub(sm.apply(inputArray)));
-		
+
 	}
 }

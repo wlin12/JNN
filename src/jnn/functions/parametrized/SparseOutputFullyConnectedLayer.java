@@ -1,7 +1,11 @@
 package jnn.functions.parametrized;
 
+import java.io.BufferedReader;
+import java.io.PrintStream;
 import java.util.Map.Entry;
 
+import jnn.features.DenseFeatureMatrix;
+import jnn.features.DenseFeatureVector;
 import jnn.features.DenseRowFeatureMatrix;
 import jnn.functions.DenseToSparseTransform;
 import jnn.mapping.Mapping;
@@ -14,6 +18,8 @@ import jnn.training.GraphInference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import util.INDArrayUtils;
 
 public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSparseTransform{
 
@@ -69,18 +75,23 @@ public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSpa
 		weights.initializeUniform(-0.1,0.1);
 		bias.initializeUniform(-0.1, 0.1);
 	}
-
+	
 	@Override
 	public void forward(DenseNeuronArray input, int inputStart, int inputEnd,
 			SparseNeuronArray output, int outputStart, int outputEnd,
 			OutputMappingDenseToSparse mapping) {
 		INDArray x = input.getOutputRange(inputStart, inputEnd);
 		for(Entry<Integer, Double> entry : output.getNonZeroEntries()){
-			double val = x.mmul(weights.getTranspose(entry.getKey())).getDouble(0);
+			double val = 0;
+			INDArray W = weights.getTranspose(entry.getKey());
+			for(int i = 0; i < inputDim; i++){
+				val+=x.getDouble(i)*W.getDouble(i);
+			}
+			//val = x.mmul(weights.getTranspose(entry.getKey())).getDouble(0);
 			if(useBias){
 				val += bias.getUpdatedWeights(entry.getKey()).getDouble(0);
 			}
-			entry.setValue(val);
+			entry.setValue(val);			
 		}
 	}
 
@@ -89,13 +100,14 @@ public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSpa
 			SparseNeuronArray output, int outputStart, int outputEnd,
 			OutputMappingDenseToSparse mapping) {
 		INDArray x = input.getOutputRange(inputStart, inputEnd);
+		INDArray xGrad = Nd4j.zeros(inputDim);
 		for(Entry<Integer, Double> entry : output.getNonZeroEntries()){
 			double gradient = output.getError(entry.getKey());
 			INDArray wGrad = x.mul(gradient);
-			weights.storeGradient(entry.getKey(), mapping.getId(), wGrad);
+			
+			weights.storeGradient(entry.getKey(), mapping.getId(), wGrad);			
 
-			INDArray xGrad = weights.getUpdatedWeights(entry.getKey()).mul(gradient);
-			input.setErrorRange(inputStart, inputEnd, xGrad);
+			INDArrayUtils.addiScale(xGrad, weights.getUpdatedWeights(entry.getKey()), gradient);
 
 			if(useBias){
 				INDArray biasGrad = Nd4j.zeros(1);
@@ -103,12 +115,38 @@ public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSpa
 				bias.storeGradient(entry.getKey(), mapping.getId(), biasGrad);
 			}
 		}
+		input.setErrorRange(inputStart, inputEnd, xGrad);
+
 	}
 
 	@Override
 	public void updateWeights(double learningRate, double momentum) {
-		bias.update();
+		if(useBias){
+			bias.update();
+		}
 		weights.update();
+	}
+	
+	public void save(PrintStream out){
+		out.println(inputDim);
+		out.println(outputDim);
+		out.println(useBias);		
+		weights.save(out);
+		bias.save(out);
+	}
+
+	public static SparseOutputFullyConnectedLayer load(BufferedReader in) {
+		try {
+			int inputDim = Integer.parseInt(in.readLine());
+			int outputDim = Integer.parseInt(in.readLine());
+			SparseOutputFullyConnectedLayer layer = new SparseOutputFullyConnectedLayer(inputDim, outputDim);
+			layer.useBias = Boolean.parseBoolean(in.readLine());
+			layer.weights = DenseRowFeatureMatrix.load(in);
+			layer.bias = DenseRowFeatureMatrix.load(in);
+			return layer;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -186,6 +224,15 @@ public class SparseOutputFullyConnectedLayer extends Layer implements DenseToSpa
 
 		}
 		System.err.println("experiment took " + (System.currentTimeMillis() - timeStart) + " millis");
+	}
+	
+	public void setUseBias(boolean useBias) {
+		this.useBias = useBias;
+	}
+	
+	public void setMomentum(boolean momentum){
+		weights.setMomentum(momentum);
+		bias.setMomentum(momentum);
 	}
 	
 	//check it does not take more time for more outputs

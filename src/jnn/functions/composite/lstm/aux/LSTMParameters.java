@@ -39,7 +39,6 @@ public class LSTMParameters {
 		cellTransformLayer.updateWeights(learningRate, momentum);
 		initialCellLayer.updateWeights(learningRate, momentum);
 		initialStateLayer.updateWeights(learningRate, momentum);
-
 	}
 	
 	public void print(){
