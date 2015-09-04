@@ -1,6 +1,6 @@
 This is a JAVA toolkit for building neural networks. You can build any architecture with it from scratch or use any prebuilt architectures (MLP, RNN, LSTM, BLSTM, Conv->Maxpool). 
 
-It contains the models presented in the following work:
+Words can be treated as independent units, or can be composed using the C2W model presented in the following work:
 
 @inproceedings{wang:2015,
  title={Finding Function in Form: Compositional Character Models for Open Vocabulary Word Representation},
