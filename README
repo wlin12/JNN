@@ -180,22 +180,12 @@ COPYING
   License file
 
 jnn.jar
-stanford-postagger-YYYY-MM-DD.jar
 
   This is a JAR file containing all classes in JNN and necessary to run the language models and taggers.
 
 src
 
   A directory containing the Java 1.8 source code for JNN.
-
-THANKS
------------------------------------------------
-
-Thanks to the members of the Stanford Natural Language Processing Lab
-for great collaborative work on Java libraries for natural language
-processing.
-
-  http://nlp.stanford.edu/javanlp/
 
 LICENSE
 -----------------------------------------------
