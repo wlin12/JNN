@@ -81,11 +81,12 @@ train_file - training file
 validation_file - validation file
 test_file - test file
 input_format - file format (options described in 2.2)
-context_model - POS prediction model (options described in 2.3)
+context_model - model that encodes contextual information (options described in 2.3)
 word_dim - word vector dimension (In a lookup table, this will generate a vocab*word_dim table, while in the C2W model, the character LSTM states will be projected into a vector of size word_dim)
 char_dim - character vector dimension (Always uses a lookup table)
 char_state_dim - LSTM state and cell dimensions used to build lstm states
 lm_state - LSTM state and cell dimensions for the language model
+sequence_activation - Activation function applied to the word vector after the composition (0 = none, 1 = logistic, 2 = tanh)
 nd4j_resource_dir - ND4J configuration directories (simply point to nd4j_resources)
 threads - number of threads to be used (sentences in each mini-batch will be divided among threads)
 update - sgd method (regular, momentum or adagrad)
@@ -132,9 +133,9 @@ without/IN
 
 This format can be specified by defining the -input_format as stanford.
 
-2-3 Part-Of-Speech tagging models
+2-3 Context Models
 -----------------------------------------------
-
+Our tagger uses a Bidirectional Long Short Term Memory RNN to encode contextual information before tagging each word, which can be specified by setting -context_model to BLSTM. This leads to better results in general as compared to a window-based model, which can be specified by setting -context_model to window.
 
 3-1 Word Representations Lookup Tables
 -----------------------------------------------
