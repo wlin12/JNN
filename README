@@ -66,6 +66,9 @@ It is also possible to use Noise Constrastive Estimation by setting the -softmax
 2.1 Part-of-Speech Tagging
 -----------------------------------------------
 
+Sample datasets can be downloaded by running:
+sh scripts/download_posdata.sh
+
 The LSTM-based Part-of-Speech Tagger can be trained by calling:
 
 java -Xmx10g -cp jnn.jar:libs/* jnn.functions.nlp.app.pos.PosTagger -lr 0.3 -batch_size 100 -validation_interval 10 -threads 8 -train_file twpos-data-v0.3/oct27.splits/oct27.train -validation_file twpos-data-v0.3/oct27.splits/oct27.dev -test_file twpos-data-v0.3/oct27.splits/oct27.test -input_format conll-0-1 -word_features characters -context_model blstm -iterations 1000 -output_dir /models/pos_model -sequence_activation 2 -word_dim 50 -char_dim 50 -char_state_dim 150  -context_state_dim 150 -update momentum -nd4j_resource_dir nd4j_resources/
