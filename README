@@ -12,7 +12,7 @@ The system requires Java 1.8+ to be installed, and approximately 8-16 GB of memo
 0.1 QUICK START 
 -----------------------------------------------
 Examples for training a Part-of-speech tagger and language models can be found in scripts/run_pos.sh and scripts/run_lm.sh, respectively.
-These can be run with the following commands (make sure you current directory is jnn_lib/):
+These can be run with the following commands:
 
 sh scripts/run_pos.sh
 sh scripts/run_lm.sh
