@@ -1,5 +1,7 @@
 package jnn.functions.nlp.app.pos;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,6 +10,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import jnn.functions.composite.SoftmaxObjectiveLayer;
+import jnn.functions.composite.lstm.LSTMDecoder;
 import jnn.functions.nlp.app.pretraining.StructuredSkipngram;
 import jnn.functions.nlp.app.pretraining.StructuredSkipngramSpecification;
 import jnn.functions.nlp.aux.input.LabelledData;
@@ -15,9 +18,11 @@ import jnn.functions.nlp.aux.input.LabelledSentence;
 import jnn.functions.nlp.aux.metrics.WordAccuracyMetric;
 import jnn.functions.nlp.aux.metrics.WordBasedEvalMetric;
 import jnn.functions.nlp.labeling.WordTaggingLayer;
+import jnn.functions.nlp.words.OutputWordRepresentationLayer;
 import jnn.functions.nlp.words.WordRepresentationLayer;
 import jnn.functions.nlp.words.WordWithContextRepresentation;
 import jnn.functions.nlp.words.features.WordRepresentationSetup;
+import jnn.functions.parametrized.StaticLayer;
 import jnn.training.GlobalParameters;
 
 import org.apache.commons.cli.BasicParser;
@@ -95,6 +100,39 @@ public class PosTagger{
 		tagVocab.sortVocabByCount();
 		tagVocab.generateHuffmanCodes();
 	}
+	
+	public void save(){
+		String file = spec.outputDir + "/model.gz";
+		String tmpFile = spec.outputDir + "/model.tmp.gz";
+		PrintStream out = IOUtils.getPrintStream(tmpFile);
+		wordVocab.saveVocab(out);
+		tagVocab.saveVocab(out);
+		taggerLayer.save(out);
+		out.close();
+		IOUtils.copyfile(tmpFile, file);
+	}
+	
+	public void load(){
+		String file = spec.outputDir + "/model.gz";
+		if(IOUtils.exists(file)){
+			System.err.println("loading previously built model found in " + file);
+			BufferedReader in = IOUtils.getReader(file);
+			WordRepresentationSetup setup = new WordRepresentationSetup(wordVocab, spec.wordProjectionDim, spec.charProjectionDim, spec.charStateDim);
+			setup.sequenceSigmoid = spec.sequenceActivation;
+			setup.loadFromString(spec.wordFeatures, spec.word2vecEmbeddings);
+
+			wordVocab = Vocab.loadVocab(in);
+			tagVocab = Vocab.loadVocab(in);
+			taggerLayer = WordTaggingLayer.load(in, setup);
+			wordRepLayer = taggerLayer.getWordRep();
+			contextRepLayer = taggerLayer.getContextLayer();
+			try {
+				in.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 
 	public void buildTagger(){
 		WordRepresentationSetup setup = new WordRepresentationSetup(wordVocab, spec.wordProjectionDim, spec.charProjectionDim, spec.charStateDim);
@@ -127,7 +165,7 @@ public class PosTagger{
 		}
 
 		SoftmaxObjectiveLayer labelSoftmaxLayer = new SoftmaxObjectiveLayer(tagVocab, spec.contextStateDim, "UNK");
-		this.taggerLayer = new WordTaggingLayer(wordRepLayer, contextRepLayer, labelSoftmaxLayer);
+		this.taggerLayer = new WordTaggingLayer(setup, wordRepLayer, contextRepLayer, labelSoftmaxLayer);
 	}
 
 	public void train(int batchSize, int threads) {
@@ -207,10 +245,6 @@ public class PosTagger{
 		if(spec.validationDatasets.numberOfSamples > 0){
 			int threads = Math.min(maxThreads, batchSize);			
 
-			HashMap<String, Double> wordErrors = new HashMap<String, Double>();
-			HashMap<String, Double> tagErrors = new HashMap<String, Double>();
-			HashMap<String, Double> wordNorm = new HashMap<String, Double>();
-			HashMap<String, Double> tagNorm = new HashMap<String, Double>();
 			ArrayList<LabelledSentence> validationSentences = new ArrayList<LabelledSentence>();
 			ArrayList<LabelledSentence> testSentences = new ArrayList<LabelledSentence>();
 			ArrayList<LabelledSentence> validationHypothesis = new ArrayList<LabelledSentence>();
@@ -359,7 +393,6 @@ public class PosTagger{
 				System.err.println("best test score (highest on dev)="+testMetric.getScoreAtIteration(devIterator.next().getBestIteration()));
 			}
 
-
 			System.err.println("number of words per second (test+val) = " + (numberOfWords/(double)computationTime) + "k");
 
 			if(spec.wordErrorMetricsValidation.getFirst().isBestIteration()){
@@ -377,13 +410,69 @@ public class PosTagger{
 					testOut.println("best test score (highest on dev)="+testMetric.getScoreAtIteration(devIterator.next().getBestIteration()));
 				}
 				validationOut.close();
-				testOut.close();
-
-				PrintStream out = IOUtils.getPrintStream(spec.outputDir + "/vectors.gz");
-				wordRepLayer.printVectors(wordVocab, 10000, out);
-
+				testOut.close();				
+				save();
 			}
 		}
+		wordRepLayer.emptyCache();
+	}
+	
+	public void test(int batchSize, int maxThreads) {
+		int numberOfSamplesLeftTest = spec.testDatasets.numberOfSamples;
+		ArrayList<LabelledSentence> testSentences = new ArrayList<LabelledSentence>();
+		ArrayList<LabelledSentence> testHypothesis = new ArrayList<LabelledSentence>();
+		
+		while(numberOfSamplesLeftTest > 0){
+			int numberOfSamples = Math.min(batchSize, numberOfSamplesLeftTest);
+			int threads =  Math.min(maxThreads, numberOfSamples);
+
+			LinkedList<int[]> order = new LinkedList<int[]>();
+			LabelledSentence[][] batchesPerThread = spec.testDatasets.readBatchesEquivalent(numberOfSamples/threads, threads, order); 
+
+			double norm = 1;
+			PosTaggerInstance[] testInstances = new PosTaggerInstance[threads];
+			Thread[] testThreads = new Thread[threads];
+
+			for(int t = 0; t < threads; t++){
+				final int tFinal = t;
+				testInstances[t] = new PosTaggerInstance(t, batchesPerThread[t], taggerLayer, norm);
+				testThreads[t] = new Thread(){
+					@Override
+					public void run() {
+						testInstances[tFinal].test();
+					}
+				};
+				testThreads[t].start();
+			}
+			for(int t = 0; t < threads; t++){
+				try {
+					testThreads[t].join();
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				for(WordBasedEvalMetric testMetric : spec.wordErrorMetricsTest){
+					testMetric.addSentenceScore(testInstances[t].getSentences(), testInstances[t].getHypothesis());							
+				}
+			}
+			for(int[] el : order){
+				testHypothesis.add(testInstances[el[0]].getHypothesis().get(el[1]));
+				testSentences.add(testInstances[el[0]].getSentences().get(el[1]));
+			}
+			numberOfSamplesLeftTest -= batchSize;
+
+		}
+		for(WordBasedEvalMetric testMetric : spec.wordErrorMetricsTest){
+			testMetric.commit();
+		}
+		
+		printOutputs(spec.outputDir + "/test", testHypothesis, testSentences);
+		PrintStream testOut = IOUtils.getPrintStream(spec.outputDir + "/test.output");
+		
+		for(WordBasedEvalMetric testMetric : spec.wordErrorMetricsTest){
+			testMetric.print(testOut);			
+		}
+		testOut.close();
+		
 		wordRepLayer.emptyCache();
 	}
 	
@@ -452,6 +541,8 @@ public class PosTagger{
 		statsOut.println("oov acc = " + oovCorrect/oov);
 		statsOut.close();
 	}
+	
+	
 
 	public static void main(String[] args){
 		Options options = new Options();
@@ -467,13 +558,18 @@ public class PosTagger{
 		options.addOption("input_format", true, "format of input (parallel, conll)");
 		options.addOption("word_features", true, "features separated by commas (e.g. words,capitalization,characters)");
 		options.addOption("context_model", true, "model used for encoding context (either blstm or window)");
-		options.addOption("word_dim", true, "word dimension per feature set");
 		options.addOption("skip_ngram_model", true, "skipngram model to initialize the embeddings");
 		options.addOption("skip_ngram_model_features", true, "skipngram model features");
 		options.addOption("sequence_activation", true, "character sequence activation (0=linear, 1=logistic, 2=tanh)");
 		options.addOption("update_rep", true, "whether to update the word representation(true or false)");
 		options.addOption("output_dir", true, "output directory");
-		
+		options.addOption("word_dim", true, "vector dimension for words");
+		options.addOption("char_dim", true, "vector dimension for characters");
+		options.addOption("char_state_dim", true, "state and cell size for the C2W model");
+		options.addOption("context_state_dim", true, "state and cell size for the pos lstm model");
+		options.addOption("update", true, "update type");
+		options.addOption("nd4j_resource_dir", true, "nd4j resource dir");
+
 		if(args.length == 0){
 			HelpFormatter formatter = new HelpFormatter();
 			formatter.printHelp( "java -jar [this program]", options );
@@ -488,9 +584,9 @@ public class PosTagger{
 			throw new RuntimeException(e);
 		}
 
-		GlobalParameters.useMomentumDefault = true;
+		GlobalParameters.setND4JResourceDir(cmd.getOptionValue("nd4j_resource_dir"));
+		GlobalParameters.setUpdateMethod(cmd.getOptionValue("update"));
 		GlobalParameters.learningRateDefault = Double.parseDouble(cmd.getOptionValue("lr"));
-		GlobalParameters.l2regularizerLambdaDefault = 0;
 
 		int batchSize = Integer.parseInt(cmd.getOptionValue("batch_size"));
 		int threads = Integer.parseInt(cmd.getOptionValue("threads"));
@@ -517,10 +613,11 @@ public class PosTagger{
 		spec.wordFeatures = cmd.getOptionValue("word_features");
 		spec.contextModel = cmd.getOptionValue("context_model");
 		spec.sequenceActivation = Integer.parseInt(cmd.getOptionValue("sequence_activation"));
-		if(cmd.getOptionValue("word_dim") != null){
-			spec.wordProjectionDim = Integer.parseInt(cmd.getOptionValue("word_dim"));
-		}
-
+		spec.wordProjectionDim = Integer.parseInt(cmd.getOptionValue("word_dim"));
+		spec.charProjectionDim = Integer.parseInt(cmd.getOptionValue("char_dim"));
+		spec.charStateDim = Integer.parseInt(cmd.getOptionValue("char_state_dim"));
+		spec.contextStateDim = Integer.parseInt(cmd.getOptionValue("context_state_dim"));
+			
 		spec.addMetricTrain(new WordAccuracyMetric("train accuracy"));
 		spec.addMetricValidation(new WordAccuracyMetric("dev accuracy"));
 		spec.addMetricTest(new WordAccuracyMetric("test accuracy"));
@@ -530,7 +627,8 @@ public class PosTagger{
 		spec.skipngramModelFeatures = cmd.getOptionValue("skip_ngram_model_features");		
 		spec.outputDir = cmd.getOptionValue("output_dir");
 		PosTagger tagger = new PosTagger(spec);
-
+		
+		tagger.load();
 
 		for(int i = 0; i < iterations; i++){
 			tagger.train(batchSize, threads);
@@ -538,5 +636,6 @@ public class PosTagger{
 				tagger.validate(batchSize, threads);				
 			}
 		}
+		tagger.test(batchSize, threads);
 	}
 }

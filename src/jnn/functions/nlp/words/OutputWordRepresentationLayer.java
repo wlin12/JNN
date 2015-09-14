@@ -2,6 +2,7 @@ package jnn.functions.nlp.words;
 
 import java.io.BufferedReader;
 import java.io.PrintStream;
+import java.util.HashSet;
 
 import util.TopNList;
 import vocab.Vocab;
@@ -79,22 +80,24 @@ public class OutputWordRepresentationLayer extends Layer implements DenseToStrin
 					WordEntry entry = setup.existingWords.getEntryFromId(i);
 					vocab.addWordToVocab(entry.getWord(), entry.getCount());
 				}
-				vocab.sortVocabByCount(limit);
+				HashSet<String> exceptions = new HashSet<String>();
+				exceptions.add(setup.UNK);
+				vocab.sortVocabByCount(limit,exceptions);
 				wordSoftmax = new SoftmaxObjectiveLayer(vocab, setup.inputDim,  setup.UNK);
 			}
 		}		
 		else if(setup.sequenceType.equals("character")){
-			WordFromCharacterSoftmax wordFromCharacterSoftmax = new WordFromCharacterSoftmax(setup.existingWords,0, setup.inputDim, setup.characterDim, setup.characterDim);
+			WordFromCharacterSoftmax wordFromCharacterSoftmax = new WordFromCharacterSoftmax(setup.existingWords,0, setup.inputDim, setup.characterDim, setup.characterDim,0);
 			wordFromCharacterSoftmax.beamSize = setup.beam;
 			wordSoftmax = wordFromCharacterSoftmax;
 		}
 		else if(setup.sequenceType.equals("character-hier")){
-			WordFromCharacterSoftmax wordFromCharacterSoftmax = new WordFromCharacterSoftmax(setup.existingWords,1, setup.inputDim, setup.characterDim, setup.characterDim);
+			WordFromCharacterSoftmax wordFromCharacterSoftmax = new WordFromCharacterSoftmax(setup.existingWords,1, setup.inputDim, setup.characterDim, setup.characterDim,0);
 			wordFromCharacterSoftmax.beamSize = setup.beam;
 			wordSoftmax = wordFromCharacterSoftmax;
 		}
 		else if(setup.sequenceType.equals("character-nce")){
-			WordFromCharacterSoftmax wordFromCharacterSoftmax = new WordFromCharacterSoftmax(setup.existingWords,2, setup.inputDim, setup.characterDim, setup.characterDim);
+			WordFromCharacterSoftmax wordFromCharacterSoftmax = new WordFromCharacterSoftmax(setup.existingWords,2, setup.inputDim, setup.characterDim, setup.characterDim,setup.negativeSamplingRate);
 			wordFromCharacterSoftmax.beamSize = setup.beam;
 			wordSoftmax = wordFromCharacterSoftmax;
 		}

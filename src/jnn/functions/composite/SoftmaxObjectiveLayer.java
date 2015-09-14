@@ -102,10 +102,12 @@ public class SoftmaxObjectiveLayer extends AbstractSofmaxObjectiveLayer implemen
 			if(output[w].getExpected() != null){
 
 				WordEntry expectedEntry = vocab.getEntry(output[w].getExpected());
+				
 				if(expectedEntry==null){
 					expectedEntry = vocab.getEntry(UNK);
 				}
 				int expectedIndex = expectedEntry.id;
+
 				WordSoftmaxDenseObjective objective = new WordSoftmaxDenseObjective(outputNeuronPerPos[w], expectedIndex);			
 				if(output[w].negative){
 					objective.addNegativeSoftmaxError(mapping.getSubInference().getNorm());
@@ -142,9 +144,12 @@ public class SoftmaxObjectiveLayer extends AbstractSofmaxObjectiveLayer implemen
 		DenseNeuronArray outputNeurons = buildInference(input, 0, vocab.getTypes(), inference);
 		inference.init();
 		inference.forward();
+
+		double[] llPerOption = WordSoftmaxDenseObjective.getLikelihoodArray(outputNeurons);
+		
 		TopNList<String> list = new TopNList<String>(n);
 		for(int i = 0; i < vocab.getTypes(); i++){
-			list.add(vocab.getEntryFromId(i).word,outputNeurons.getNeuron(i));
+			list.add(vocab.getEntryFromId(i).word,llPerOption[i]);
 		}
 		return list;
 	}

@@ -241,6 +241,29 @@ public class Vocab {
 		this.types = words.size();
 		System.err.println("reducing vocab to " + words.size() + " entries");
 	}
+	
+	public void sortVocabByCount(int maxEntries, HashSet<String> exceptions){
+		sortVocabByCount();
+		int skipped = 0;
+		while(words.size() > maxEntries){
+			WordEntry candidate = words.get(words.size() - 1 - skipped);
+			if(!exceptions.contains(candidate.word)){
+				words.remove(words.size() - 1 - skipped);
+				hash.remove(candidate.word);				
+			}
+			else{
+				skipped++;				
+			}
+			if(skipped >= words.size()){
+				break;
+			}
+		}		
+		this.types = words.size();
+		for(int i = 0; i < words.size(); i++){
+			words.get(i).id = i;
+		}
+		System.err.println("reducing vocab to " + words.size() + " entries");
+	}
 
 	public void sortVocabByCount(){
 		final WordEntry eof = hash.get(EOS);

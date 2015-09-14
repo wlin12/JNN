@@ -65,7 +65,7 @@ public class DeepRNN extends Layer implements DenseArrayToDenseArrayTransform, D
 			rnn = new BLSTM(dims.get(dims.size()-1), stateDim, outputDim);
 		}		
 		else if(type.equals("convolution")){
-			rnn = new ConvolutionLayer(2, dims.get(dims.size()-1), outputDim);
+			rnn = new ConvolutionLayer(4, dims.get(dims.size()-1), outputDim);
 		}
 		else{
 			throw new RuntimeException("unknown rnn type");

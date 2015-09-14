@@ -17,7 +17,23 @@ public class StringUtils {
 		return ret.substring(0, ret.length()-1);
 	}
 	
+	public static String arrayToString(int[] array){
+		String ret = "";
+		for(double s : array){
+			ret+=s+"_";
+		}
+		return ret.substring(0, ret.length()-1);
+	}
+	
 	public static String arrayToString(double[] array, String delimiter){
+		String ret = "";
+		for(double s : array){
+			ret+=s+delimiter;
+		}
+		return ret.substring(0, ret.length()-delimiter.length());
+	}
+	
+	public static String arrayToString(int[] array, String delimiter){
 		String ret = "";
 		for(double s : array){
 			ret+=s+delimiter;

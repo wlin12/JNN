@@ -31,18 +31,23 @@ public class StackBasedDecoder {
 	}
 	
 	public void decode(){
+		double bestFinalStateScore = -Double.MAX_VALUE;		
 		if(stacksByTimestamp.isEmpty()){
 			getStack(0).addState(initialState);
 			for(int t = 0; t < maxTimestamp; t++){
 				DecoderStack stack = getStack(t);
 				for(int s = 0; s < stackSize; s++){
-					DecoderState state = stack.popState();
+					DecoderState state = stack.popState();					
 					if(state == null) break;
+					if(state.score < bestFinalStateScore) continue;
 					List<DecoderState> followingStates = decoderMethods.expand(state);
 					for(DecoderState next : followingStates){
 						next.setPrevState(state);
 						if(next.isFinal){
 							finalStates.addState(next);
+							if(bestFinalStateScore < next.score){
+								bestFinalStateScore = next.score;
+							}
 						}
 						else{
 							getStack(next.size + t).addState(next);

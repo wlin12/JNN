@@ -3,9 +3,11 @@ package jnn.functions.composite.lstm;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.LinkedList;
 import java.util.List;
 
 import util.IOUtils;
+import util.TopNList;
 import jnn.decoder.DecoderInterface;
 import jnn.decoder.stackbased.StackBasedDecoder;
 import jnn.decoder.state.DecoderState;
@@ -15,6 +17,7 @@ import jnn.functions.composite.lstm.aux.LSTMMapping;
 import jnn.functions.composite.lstm.aux.LSTMOutputNeurons;
 import jnn.functions.composite.lstm.aux.LSTMParameters;
 import jnn.functions.composite.lstm.aux.LSTMStateTransform;
+import jnn.functions.nlp.words.WordFromCharacterSoftmax.SequenceWordState;
 import jnn.functions.nonparametrized.CopyLayer;
 import jnn.functions.nonparametrized.LogisticSigmoidLayer;
 import jnn.functions.nonparametrized.SoftmaxLayer;
@@ -273,6 +276,52 @@ public class LSTMDecoderWithAlignment extends Layer implements LSTMStateTransfor
 		decoder.stackSize = beam;
 		decoder.decode();
 		return (LSTMDecoderWithAlignmentState)decoder.getBestState();
+	}
+	
+	public TopNList<LSTMDecoderWithAlignmentState> decode(LSTMDecoderWithAlignmentState initialDecoderState, DenseNeuronArray[] source, int beam, int topN, DecoderInterface scorer){
+
+		GraphInference inference = new GraphInference(0, false);
+		DenseNeuronArray[] alignmentSources = buildSourceAlignments(source, inference);
+		inference.init();
+		inference.forward();
+
+		StackBasedDecoder decoder = new StackBasedDecoder(new DecoderInterface() {
+
+			@Override
+			public List<DecoderState> expand(DecoderState state) {
+				LSTMDecoderWithAlignmentState lstmState = (LSTMDecoderWithAlignmentState) state;
+				GraphInference inference = new GraphInference(0, false);
+				inference.addNeurons(0,alignmentSources);
+				inference.addNeurons(0,source);
+				lstmState.alignments = new DenseNeuronArray(source.length);
+				DenseNeuronArray[] nextFertility = new DenseNeuronArray[1];
+				LSTMBlock block = getForwardBlocks(state.numberOfPrevStates,new DenseNeuronArray[]{lstmState.input}, source,alignmentSources, new LSTMDecoderWithAlignmentState[]{lstmState},nextFertility, inference)[0];
+				inference.init();
+				inference.forward();
+				lstmState.output = block.hState;
+
+				List<DecoderState> states = scorer.expand(state);
+				for(DecoderState nextState : states){					
+					LSTMDecoderWithAlignmentState nextLstmState = (LSTMDecoderWithAlignmentState) nextState;
+					nextLstmState.lstmState = block.hState;
+					nextLstmState.lstmCell = block.cMen;
+				}
+				return states;
+			}
+		}, initialDecoderState);
+		decoder.stackSize = beam;
+		decoder.decode();
+		LinkedList<DecoderState> finalStates = decoder.getBestStates(topN);
+		TopNList<LSTMDecoderWithAlignmentState> ret = new TopNList<LSTMDecoderWithAlignmentState>(topN);			
+
+		if(finalStates.size() == 0){
+			return ret;
+		}
+		for(int k = 0; k < finalStates.size(); k++){
+			LSTMDecoderWithAlignmentState state = (LSTMDecoderWithAlignmentState)finalStates.get(k);
+			ret.add(state, state.score);
+		}
+		return ret;
 	}
 
 	@Override

@@ -58,7 +58,7 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 	int dropoutStartId = -1;
 	int beamSize = 20;
 	int softmaxType = 0; //0-> softmax 1-> hierarchical softmax 2-> nce softmax
-
+	
 	public static class SequenceWordState extends LSTMDecoderWithAlignmentState{
 		String outputString;
 		int numberOfWords;
@@ -82,7 +82,7 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 	private WordFromCharacterSoftmax() {
 	}
 
-	public WordFromCharacterSoftmax(Vocab wordVocab, int softmaxType, int externalInputDim, int letterDim, int stateDim) {
+	public WordFromCharacterSoftmax(Vocab wordVocab, int softmaxType, int externalInputDim, int letterDim, int stateDim, int samplingRate) {
 		this.externalInputDim = externalInputDim;
 		this.letterDim = letterDim;
 		this.stateDim = stateDim;
@@ -113,7 +113,7 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 			letterPredictionLayer = new HierarchicalSoftmaxObjectiveLayer(charVocab, stateDim, UNK);
 		}
 		else if(softmaxType == 2){
-			letterPredictionLayer = new NoiseConstrastiveEstimationLayer(letterDim, charVocab, stateDim, UNK);
+			letterPredictionLayer = new NoiseConstrastiveEstimationLayer(stateDim, charVocab, samplingRate, UNK);
 		}
 		else {
 			throw new RuntimeException("unknown softmax");
@@ -281,7 +281,6 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 		//			outputNeuronsPerPos[pos][expectedWordChars.length].setExpected(EOS);
 		//		}
 		mapping.getSubInference().backward();
-
 	}
 
 	@Override
@@ -294,7 +293,7 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 	}
 
 	public String decode(DenseNeuronArray input){
-		return decode(input, 1);
+		return decode(input, beamSize);
 	}
 	
 	@Override
@@ -318,7 +317,7 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 		//lstm encoding -> lstm decoding
 		SequenceWordState initialDecoderState = new SequenceWordState(0, false, initialState, initialState, initialCell, buildLetterProjectionsAndInit(new String[]{SOS}, input)[0], "", 0);
 		initialDecoderState.name = "initial";
-		SequenceWordState finalState = (SequenceWordState) decoder.decode(initialDecoderState,1,new DecoderInterface() {
+		SequenceWordState finalState = (SequenceWordState) decoder.decode(initialDecoderState,beam,new DecoderInterface() {
 
 			@Override
 			public List<DecoderState> expand(DecoderState state) {
@@ -334,10 +333,12 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 				while(topnIt.hasNext()){					
 					double wordScore = scoreIt.next();
 					String outputWord = topnIt.next();
+
 					if(outputWord.equals(SOS)) continue;
 					boolean isFinal = outputWord.equals(EOS);
 
-					double newScore = ((score * numberOfWords) + wordScore)/(numberOfWords+1);
+//					double newScore = ((score * numberOfWords) + wordScore)/(numberOfWords+1);
+					double newScore = score + wordScore;
 					String newString = outputStr;
 					if(!isFinal){
 						newString =  outputStr + outputWord;
@@ -422,10 +423,9 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 		inference.forward();
 
 		//lstm encoding -> lstm decoding
-		SequenceWordState initialDecoderState = new SequenceWordState(0, false, initialState, initialState, initialCell, buildLetterProjectionsAndInit(new String[]{SOS}, input)[0], "", 0);
+		SequenceWordState initialDecoderState = new SequenceWordState(1, false, initialState, initialState, initialCell, buildLetterProjectionsAndInit(new String[]{SOS}, input)[0], "", 0);
 //		System.err.println(initialDecoderState.lstmState);
-		initialDecoderState.name = "initial";
-		LSTMDecoderState[] finalStates = decoder.decode(initialDecoderState,1, topN,new DecoderInterface() {
+		LSTMDecoderState[] finalStates = decoder.decode(initialDecoderState,beam, topN,new DecoderInterface() {
 
 			@Override
 			public List<DecoderState> expand(DecoderState state) {
@@ -440,11 +440,12 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 				Iterator<String> wordIt = topn.getObjectList().iterator();
 				while(scoreIt.hasNext()){
 					String outputWord = wordIt.next();
+
 					double wordScore = scoreIt.next();
 					if(outputWord.equals(SOS)) continue;
-					boolean isFinal = outputWord.equals(EOS);
-
-					double newScore = ((score * numberOfWords) + wordScore)/(numberOfWords+1);
+					boolean isFinal = outputWord.equals(EOS);					
+//					double newScore = ((score * numberOfWords) + wordScore)/(numberOfWords+1);
+					double newScore = score + wordScore;
 					String newString = outputStr;
 					if(!isFinal){
 						newString =  outputStr + outputWord;
@@ -482,7 +483,7 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 		wordVocab.addWordToVocab("rat",1);
 		
 		int inputSize = 50;
-		WordFromCharacterSoftmax softmax = new WordFromCharacterSoftmax(wordVocab, 0, inputSize, 50, 150);
+		WordFromCharacterSoftmax softmax = new WordFromCharacterSoftmax(wordVocab, 2, inputSize, 50, 150,5);
 		
 		DenseNeuronArray ratVector = new DenseNeuronArray(inputSize);
 		DenseNeuronArray catVector = new DenseNeuronArray(inputSize);
@@ -495,7 +496,7 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 		dogVector.randInitialize();
 		doggyVector.randInitialize();
 		
-		for(int e = 0; e < 100; e++){
+		for(int e = 0; e < 1000; e++){
 			GraphInference inference = new GraphInference(0, true);
 			inference.addNeurons(ratVector);
 			inference.addNeurons(catVector);
@@ -553,10 +554,10 @@ public class WordFromCharacterSoftmax extends AbstractSofmaxObjectiveLayer imple
 		inference.init();
 		inference.forward();
 		inference.printNeurons();
-		System.err.println(softmax.decode(ratVector));
-		System.err.println(softmax.decode(catVector));
-		System.err.println(softmax.decode(kittenVector));
-		System.err.println(softmax.decode(dogVector));
-		System.err.println(softmax.decode(doggyVector));
+		System.err.println(softmax.decode(ratVector,5,5));
+//		System.err.println(softmax.decode(catVector));
+//		System.err.println(softmax.decode(kittenVector));
+//		System.err.println(softmax.decode(dogVector));
+//		System.err.println(softmax.decode(doggyVector));
 	}
 }

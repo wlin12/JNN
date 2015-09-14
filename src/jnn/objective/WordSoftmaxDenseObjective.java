@@ -63,21 +63,19 @@ public class WordSoftmaxDenseObjective {
 	}
 
 	public static double[] getLikelihoodArray(DenseNeuronArray neurons){
-		double sum = 0;
-		for(int key = 0; key < neurons.size; key++){
-			sum += FastMath.exp(neurons.getNeuron(key));
-		}
-		double logsum = FastMath.log(sum);
+		INDArray expArray = ExpTable.getExpNormTable(neurons.getOutputRange(0, neurons.size-1));
 		double[] ret = new double[neurons.size];
 		for(int key = 0; key < neurons.size; key++){
-			ret[key] = neurons.getNeuron(key) - logsum;
+			ret[key] = FastMath.log(expArray.getDouble(key));
 		}
 		return ret;
 	}
-
+	
 	public double getLL() {
 		return loglikelihood;
 	}
+	
+	
 
 	public static void main(String[] args){
 		DenseNeuronArray input = new DenseNeuronArray(10);
@@ -100,4 +98,6 @@ public class WordSoftmaxDenseObjective {
 		System.err.println(expectedArray.sub(sm.apply(inputArray)));
 
 	}
+
+	
 }

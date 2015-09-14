@@ -46,7 +46,6 @@ public class BLSTM extends RNN implements DenseArrayToDenseArrayTransform, Dense
 
 	public BLSTM(int inputDim, int stateDim, int outputDim) {
 		super(inputDim, stateDim, outputDim);
-		
 		parameters = new LSTMParameters(inputDim, stateDim);
 		parametersBackward = new LSTMParameters(inputDim, stateDim);
 

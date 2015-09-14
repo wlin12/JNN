@@ -1,9 +1,12 @@
 package jnn.functions.nlp.labeling;
 
+import java.io.BufferedReader;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
 import util.LangUtils;
+import util.SerializeUtils;
 import vocab.Vocab;
 import jnn.functions.StringArrayToStringArrayTransform;
 import jnn.functions.composite.SoftmaxObjectiveLayer;
@@ -26,18 +29,19 @@ import jnn.training.GraphInference;
 
 public class WordTaggingLayer extends Layer implements StringArrayToStringArrayTransform{	
 	
-	
+	WordRepresentationSetup wordSetup;
 	WordRepresentationLayer wordLayer;
 	WordWithContextRepresentation wordToContextLayer;
-	SoftmaxObjectiveLayer contextToPOSLayer;	
+	SoftmaxObjectiveLayer contextToTagLayer;	
 
-	public WordTaggingLayer(WordRepresentationLayer wordLayer,
+	public WordTaggingLayer(WordRepresentationSetup wordSetup, WordRepresentationLayer wordLayer,
 			WordWithContextRepresentation wordToContextLayer,
 			SoftmaxObjectiveLayer contextToPOSLayer) {
 		super();
+		this.wordSetup = wordSetup;
 		this.wordLayer = wordLayer;
 		this.wordToContextLayer = wordToContextLayer;
-		this.contextToPOSLayer = contextToPOSLayer;
+		this.contextToTagLayer = contextToPOSLayer;
 	}
 
 	public StringNeuronArray[] buildInference(String[] input, StringNeuronArray[] output, GraphInference inference){
@@ -49,7 +53,7 @@ public class WordTaggingLayer extends Layer implements StringArrayToStringArrayT
 		inference.addNeurons(2, contextVectors);
 		inference.addMapping(new OutputMappingDenseArrayToDenseArray(wordProjections, contextVectors, wordToContextLayer));
 		inference.addNeurons(3, output);
-		inference.addMapping(new OutputMappingDenseArrayToStringArray(contextVectors, output, contextToPOSLayer));
+		inference.addMapping(new OutputMappingDenseArrayToStringArray(contextVectors, output, contextToTagLayer));
 		
 		inference.init();
 		inference.forward();
@@ -73,7 +77,7 @@ public class WordTaggingLayer extends Layer implements StringArrayToStringArrayT
 	public void updateWeights(double learningRate, double momentum) {
 		wordLayer.updateWeights(learningRate, momentum);
 		wordToContextLayer.updateWeights(learningRate, momentum);
-		contextToPOSLayer.updateWeights(learningRate, momentum);		
+		contextToTagLayer.updateWeights(learningRate, momentum);		
 	}
 	
 	public void updateWeights(double learningRate, double momentum, boolean updateRep) {
@@ -81,7 +85,30 @@ public class WordTaggingLayer extends Layer implements StringArrayToStringArrayT
 			wordLayer.updateWeights(learningRate, momentum);
 		}
 		wordToContextLayer.updateWeights(learningRate, momentum);
-		contextToPOSLayer.updateWeights(learningRate, momentum);		
+		contextToTagLayer.updateWeights(learningRate, momentum);		
+	}
+	
+	public void save(PrintStream out){
+		wordLayer.save(out);
+		wordToContextLayer.save(out);
+		contextToTagLayer.save(out);
+	}
+	
+	public static WordTaggingLayer load(BufferedReader in, WordRepresentationSetup wordSetup){
+		WordRepresentationLayer wordLayer = WordRepresentationLayer.load(in, wordSetup);
+		WordWithContextRepresentation wordToContextLayer = WordWithContextRepresentation.load(in);
+		SoftmaxObjectiveLayer contextToTagLayer = SoftmaxObjectiveLayer.load(in);	
+
+		WordTaggingLayer layer = new WordTaggingLayer(wordSetup, wordLayer, wordToContextLayer, contextToTagLayer);
+		return layer;
+	}
+
+	public WordRepresentationLayer getWordRep() {
+		return wordLayer;
+	}
+
+	public WordWithContextRepresentation getContextLayer() {
+		return wordToContextLayer;
 	}
 	
 	public static void main(String[] args){
@@ -153,7 +180,7 @@ public class WordTaggingLayer extends Layer implements StringArrayToStringArrayT
 		SoftmaxObjectiveLayer labelSoftmaxLayer = new SoftmaxObjectiveLayer(outputVocab, contextStateSize, "<unk>");
 		
 		// building tagger
-		WordTaggingLayer tagger = new WordTaggingLayer(wordRepLayer, contextRepLayer, labelSoftmaxLayer);
+		WordTaggingLayer tagger = new WordTaggingLayer(setup,wordRepLayer, contextRepLayer, labelSoftmaxLayer);
 		for(int e = 0; e < 1000; e++){
 			for(int i = 0; i < inputSents.length; i++){
 				String[] input = inputSentsWithoutPunctuation[i];
@@ -175,4 +202,5 @@ public class WordTaggingLayer extends Layer implements StringArrayToStringArrayT
 		}
 		
 	}
+
 }

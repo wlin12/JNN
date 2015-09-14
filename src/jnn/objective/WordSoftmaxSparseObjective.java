@@ -152,12 +152,16 @@ public class WordSoftmaxSparseObjective {
 	}
 	
 	public TopNList<Integer> getNCETopN(int n, int k, double[] noiseEstimation) {
+		double logsum = FastMath.log(0);
+		for(int i = 0; i < noiseEstimation.length; i++){
+			double activation = neurons.getOutput(i);
+			logsum = LogAdd.logAdd(logsum, activation);
+		}
+		
 		TopNList<Integer> topN = new TopNList<Integer>(n);
 		for(int i = 0; i < noiseEstimation.length; i++){			
 			double activation = neurons.getOutput(i);
-			activation = FastMath.exp(activation);
-			//double pReal = activation/(noiseEstimation[i]*k+activation);
-			topN.add(i, activation);
+			topN.add(i, activation-logsum);
 		}
 		return topN;
 	}

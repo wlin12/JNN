@@ -22,6 +22,8 @@ import java.util.Stack;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import com.google.common.io.Files;
+
 public class IOUtils {
 	static BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
@@ -225,27 +227,28 @@ public class IOUtils {
 		try{
 			File f1 = new File(srFile);
 			File f2 = new File(dtFile);
-			InputStream in = new FileInputStream(f1);
-
-			//For Append the file.
-			//  OutputStream out = new FileOutputStream(f2,true);
-
-			//For Overwrite the file.
-			OutputStream out = null;
-			if(dtFile.endsWith(".gz")){
-				out = new GZIPOutputStream(new FileOutputStream(f2));
-			}
-			else{
-				out = new FileOutputStream(f2);				
-			}
-
-			byte[] buf = new byte[1024];
-			int len;
-			while ((len = in.read(buf)) > 0){
-				out.write(buf, 0, len);
-			}
-			in.close();
-			out.close();
+			Files.copy(f1, f2);
+//			InputStream in = new FileInputStream(f1);
+//
+//			//For Append the file.
+//			//  OutputStream out = new FileOutputStream(f2,true);
+//
+//			//For Overwrite the file.
+//			OutputStream out = null;
+//			if(dtFile.endsWith(".gz")){
+//				out = new GZIPOutputStream(new FileOutputStream(f2));
+//			}
+//			else{
+//				out = new FileOutputStream(f2);				
+//			}
+//
+//			byte[] buf = new byte[1024];
+//			int len;
+//			while ((len = in.read(buf)) > 0){
+//				out.write(buf, 0, len);
+//			}
+//			in.close();
+//			out.close();
 		}
 		catch(FileNotFoundException ex){
 			System.err.println(ex.getMessage() + " in the specified directory.");

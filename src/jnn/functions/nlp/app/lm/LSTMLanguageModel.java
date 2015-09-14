@@ -72,6 +72,7 @@ public class LSTMLanguageModel {
 	public void load(){
 		String file = setup.outputDir + "/model.gz";
 		if(IOUtils.exists(file)){
+			System.err.println("loading previously built model found in " + file);
 			BufferedReader in = IOUtils.getReader(file);
 			inputVocab = Vocab.loadVocab(in);
 			wordRepresentation = WordRepresentationLayer.load(in, wordRepresentationSetup);		
@@ -98,15 +99,19 @@ public class LSTMLanguageModel {
 			}
 			outputVocab.addWordToVocab(EOS, 1);
 		}
+		HashSet<String> exception = new HashSet<String>();
+		exception.add(EOS);
+		exception.add(SOS);
+		exception.add(UNK);
 		inputVocab.addWordToVocab(SOS, 2);
 		inputVocab.addWordToVocab(UNK, 2);
-		inputVocab.sortVocabByCount(setup.maxType);
+		inputVocab.sortVocabByCount(setup.maxType,exception);
 		outputVocab.addWordToVocab(UNK, 2);
-		outputVocab.sortVocabByCount(setup.maxType);
+		outputVocab.sortVocabByCount(setup.maxType,exception);
 	}
 	
 	public void buildModels(){
-		wordRepresentationSetup = new WordRepresentationSetup(inputVocab, setup.wordProjectionDim, setup.charProjectionDim, setup.charProjectionDim);		
+		wordRepresentationSetup = new WordRepresentationSetup(inputVocab, setup.wordProjectionDim, setup.charProjectionDim, setup.charStateDim);		
 		wordRepresentationSetup.loadFromString(setup.wordFeatures, setup.word2vecEmbeddings);
 		wordRepresentation = new WordRepresentationLayer(wordRepresentationSetup);
 
@@ -205,7 +210,7 @@ public class LSTMLanguageModel {
 //		System.err.println("total backward time (train) = " + backwardTime);
 //		System.err.println("total commit time (train) = " + commitTime);
 //		System.err.println("total word rep time (train) = " + wordRepTime);
-		System.err.println("ll = " + loglikelihood/words);
+		System.err.println("log-likelihood in mini-batch = " + loglikelihood/words);
 
 //		wordRepresentation.printCommitTimeAndReset();
 //		decoder.printCommitTimeAndReset();
@@ -271,9 +276,9 @@ public class LSTMLanguageModel {
 		double pp = FastMath.pow(2,-loglikelihoodKnown/FastMath.log(2)/wordsKnown);
 		long computationTime = System.currentTimeMillis() - startTime;
 		System.err.println("number of words per second (dev) = " + (words/(double)computationTime) + "k");
-		System.err.println("ll = " + loglikelihood/words);
-		System.err.println("ll(unk) = " + loglikelihoodUnk/wordsUnk);
-		System.err.println("ll(known) = " + loglikelihoodKnown/wordsKnown);
+		System.err.println("log-likelihood = " + loglikelihood/words);
+		System.err.println("log-likelihood(unk) = " + loglikelihoodUnk/wordsUnk);
+		System.err.println("log-likelihood(known) = " + loglikelihoodKnown/wordsKnown);
 		System.err.println("pp = " + pp);
 		devPP.initError();
 		
@@ -312,7 +317,7 @@ public class LSTMLanguageModel {
 			}
 		}
 		
-		PrintStream out = IOUtils.getPrintStream(setup.outputDir + "test.scores.gz");
+		PrintStream out = IOUtils.getPrintStream(setup.outputDir + "/test.scores.gz");
 		
 		wordRepresentation.fillCache(wordSet, threads, false);
 		while(sents > 0){
@@ -362,9 +367,9 @@ public class LSTMLanguageModel {
 		out.close();
 		long computationTime = System.currentTimeMillis() - startTime;
 		System.err.println("number of words per second (test) = " + (words/(double)computationTime) + "k");
-		System.err.println("ll = " + loglikelihood/words);
-		System.err.println("ll(unk) = " + loglikelihoodUnk/wordsUnk);
-		System.err.println("ll(known) = " + loglikelihoodKnown/wordsKnown);
+		System.err.println("log-likelihood = " + loglikelihood/words);
+		System.err.println("log-likelihood(unk) = " + loglikelihoodUnk/wordsUnk);
+		System.err.println("log-likelihood(known) = " + loglikelihoodKnown/wordsKnown);
 	}
 	
 	public static void main(String[] args){
@@ -381,8 +386,12 @@ public class LSTMLanguageModel {
 		options.addOption("output_dir", true, "output directory");
 		options.addOption("word_features", true, "word features separated by commas (e.g. words,capitalization,characters)");
 		options.addOption("word2vec_embeddings", true, "word2vec embeddings");
-		options.addOption("softmax_function", true, "softmax function (word or character)");
-		options.addOption("word_dim", true, "dimensions for words");
+		options.addOption("softmax_function", true, "softmax function (word for regular softmax, word-nce for noise contrastive estimation)");
+		options.addOption("word_dim", true, "vector dimension for words");
+		options.addOption("char_dim", true, "vector dimension for characters");
+		options.addOption("char_state_dim", true, "state and cell size for the C2W model");
+		options.addOption("lm_state_dim", true, "state and cell size for the language model");
+		options.addOption("update", true, "update type");
 
 		options.addOption("nd4j_resource_dir", true, "nd4j resource dir");
 
@@ -401,20 +410,23 @@ public class LSTMLanguageModel {
 		}
 
 		GlobalParameters.setND4JResourceDir(cmd.getOptionValue("nd4j_resource_dir"));
-		GlobalParameters.useMomentumDefault = true;
+		GlobalParameters.setUpdateMethod(cmd.getOptionValue("update"));
 		GlobalParameters.learningRateDefault = Double.parseDouble(cmd.getOptionValue("lr"));
 
-		
 		LSTMLanguageModelSpecification spec = new LSTMLanguageModelSpecification();
 		
 		spec.addDataset(cmd.getOptionValue("train_file"));
 		spec.addValidationDataset(cmd.getOptionValue("validation_file"));
+		spec.addTestDataset(cmd.getOptionValue("test_file"));
 
 		spec.outputDir = cmd.getOptionValue("output_dir");
 		spec.wordFeatures = cmd.getOptionValue("word_features");
 		spec.word2vecEmbeddings = cmd.getOptionValue("word2vec_embeddings");
 		spec.softmaxType = cmd.getOptionValue("softmax_function");
 		spec.wordProjectionDim = Integer.parseInt(cmd.getOptionValue("word_dim"));
+		spec.charProjectionDim = Integer.parseInt(cmd.getOptionValue("char_dim"));
+		spec.charStateDim = Integer.parseInt(cmd.getOptionValue("char_state_dim"));
+		spec.decoderStateDim = Integer.parseInt(cmd.getOptionValue("lm_state_dim"));
 		LSTMLanguageModel lm = new LSTMLanguageModel(spec);
 
 		int batchSize = Integer.parseInt(cmd.getOptionValue("batch_size"));
@@ -422,7 +434,7 @@ public class LSTMLanguageModel {
 		int validationInterval = Integer.parseInt(cmd.getOptionValue("validation_interval"));
 		int iterations = Integer.parseInt(cmd.getOptionValue("iterations"));
 
-		//lm.load();
+		lm.load();
 
 		for(int i = 0; i < iterations; i++){
 			System.err.println(i +" in "+iterations);
@@ -431,16 +443,17 @@ public class LSTMLanguageModel {
 			}
 			boolean debug = false;
 			if(i != 0 & i % validationInterval == 0){
-				System.err.println("testing");
+				System.err.println("computing perplexity on validation set");
 				debug = true;
 				if(lm.validate(batchSize, threads)){
+					System.err.println("highest perplexity achieved on validation, saving model and scoring test set");					
 					lm.save();
+					lm.scoreSentences(batchSize, threads, spec.testData);
 				}
 			}
 			lm.train(batchSize, threads, debug);
 		}
 		
-		spec.addTestDataset(cmd.getOptionValue("test_file"));
 		lm.scoreSentences(batchSize, threads, spec.testData);
 	}
 }

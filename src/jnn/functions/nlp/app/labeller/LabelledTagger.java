@@ -153,7 +153,7 @@ public class LabelledTagger{
 		}
 
 		SoftmaxObjectiveLayer labelSoftmaxLayer = new SoftmaxObjectiveLayer(tagVocab, spec.contextStateDim, "<unk>");
-		this.taggerLayer = new WordTaggingLayer(wordRepLayer, contextRepLayer, labelSoftmaxLayer);
+		this.taggerLayer = new WordTaggingLayer(setup, wordRepLayer, contextRepLayer, labelSoftmaxLayer);
 	}
 
 	public void train(int batchSize, int threads) {
