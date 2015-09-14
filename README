@@ -187,6 +187,18 @@ src
 
   A directory containing the Java 1.8 source code for JNN.
 
+libs
+
+  These are java libraries needed to run JNN
+
+scripts
+
+  This directory contains examples scripts for different tasks
+
+nd4j_resources
+
+  Configuration files for ND4J (http://nd4j.org)
+
 LICENSE
 -----------------------------------------------
 
