@@ -13,6 +13,7 @@ The system requires Java 1.8+ to be installed, and approximately 8-16 GB of memo
 -----------------------------------------------
 Examples for training a Part-of-speech tagger and language models can be found in scripts/run_pos.sh and scripts/run_lm.sh, respectively.
 These can be run with the following commands (make sure you current directory is jnn_lib/):
+
 sh scripts/run_pos.sh
 sh scripts/run_lm.sh
 
@@ -32,6 +33,7 @@ java -Xmx10g -cp jnn.jar:libs/* jnn.functions.nlp.app.lm.LSTMLanguageModel -batc
 This command will train a neural language model using the training file wiki/wiki.train.en, validating on wiki/wiki.val.en, and testing on wiki/wiki.test.en. 
 
 Arguments are described below:
+
 batch_size - number of sentences (lines) processed in each each mini-batch
 iterations - number of iterations the model is to be trained (each iterations processes one mini-batch)
 lr - learning rate
@@ -51,6 +53,7 @@ threads - number of threads to be used (sentences in each mini-batch will be div
 update - sgd method (regular, momentum or adagrad)
 
 The following files will be created in the directory specified by -output_dir:
+
 model.gz - The model is stored in this file every time the validation perplexity exceeds the previous highest value. If this file exists when the command is called, this model will be loaded and training will be carried out from this point. This way if something goes wrong during training (e.g. server crashes), training will resume at the last saved point.
 model.tmp.gz - A backup copy of hte model.gz file, this is kept so that if the script fails when model.gz is being written, it is not lost. Thus, if model.gz is incomplete, simply copy model.tmp.gz over it.
 rep.gz - The word representation model, this can be used in order to reuse the word representations trained on this task as initilization for other tasks.
@@ -75,7 +78,8 @@ java -Xmx10g -cp jnn.jar:libs/* jnn.functions.nlp.app.pos.PosTagger -lr 0.3 -bat
 
 This command will train a POS tagger using the training file twpos-data-v0.3/oct27.splits/oct27.train, validating on twpos-data-v0.3/oct27.splits/oct27.dev, and testing on twpos-data-v0.3/oct27.splits/oct27.test. 
 
-Arguments are described below:tch_size - number of sentences (lines) processed in each each mini-batch
+Arguments are described below:
+batch_size - number of sentences (lines) processed in each each mini-batch
 iterations - number of iterations the model is to be trained (each iterations processes one mini-batch)
 lr - learning rate
 output_dir - directory to save the model, write the statistics (accuracies), and scores for the test data
@@ -95,6 +99,7 @@ threads - number of threads to be used (sentences in each mini-batch will be div
 update - sgd method (regular, momentum or adagrad)
 
 The following files will be created in the directory specified by -output_dir:
+
 model.gz - The model is stored in this file every time the validation perplexity exceeds the previous highest value. If this file exists when the command is called, this model will be loaded and training will be carried out from this point. This way if something goes wrong during training (e.g. server crashes), training will resume at the last saved point.
 model.tmp.gz - A backup copy of hte model.gz file, this is kept so that if the script fails when model.gz is being written, it is not lost. Thus, if model.gz is incomplete, simply copy model.tmp.gz over it.
 rep.gz - The word representation model, this can be used in order to reuse the word representations trained on this task as initilization for other tasks.
