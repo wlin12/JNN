@@ -55,7 +55,7 @@ model.gz - The model is stored in this file every time the validation perplexity
 model.tmp.gz - A backup copy of hte model.gz file, this is kept so that if the script fails when model.gz is being written, it is not lost. Thus, if model.gz is incomplete, simply copy model.tmp.gz over it.
 rep.gz - The word representation model, this can be used in order to reuse the word representations trained on this task as initilization for other tasks.
 test.scores.gz - Once the model finishes training, the file specified by -test_file is trained and sentence level perplexities are computed and stored in this file. (to simply run a model on the test set, make sure the model.gz is created and set -iterations to 0)
-stats - Reports statistics during training. In this task, perplexities per iteration on the development set are reported.
+stats - Reports statistics during training. In this task, perplexities on the development set are reported.
 
 1.2 SOFTMAX functions
 -----------------------------------------------
@@ -93,6 +93,19 @@ sequence_activation - Activation function applied to the word vector after the c
 nd4j_resource_dir - ND4J configuration directories (simply point to nd4j_resources)
 threads - number of threads to be used (sentences in each mini-batch will be divided among threads)
 update - sgd method (regular, momentum or adagrad)
+
+The following files will be created in the directory specified by -output_dir:
+model.gz - The model is stored in this file every time the validation perplexity exceeds the previous highest value. If this file exists when the command is called, this model will be loaded and training will be carried out from this point. This way if something goes wrong during training (e.g. server crashes), training will resume at the last saved point.
+model.tmp.gz - A backup copy of hte model.gz file, this is kept so that if the script fails when model.gz is being written, it is not lost. Thus, if model.gz is incomplete, simply copy model.tmp.gz over it.
+rep.gz - The word representation model, this can be used in order to reuse the word representations trained on this task as initilization for other tasks.
+validation.output - Automatically tagged validation set using the tagger.
+test.output - Automatically tagged test set using the tagger.
+validation.output - Reports statistics during training on the validation set. In this task, tagging accuracies are reported.
+test.output - Reports statistics during training on the test set. In this task, tagging accuracies are reported.
+validation.correct - Lists correctly labelled words in the validation set.
+test.correct - Lists correctly labelled words in the test set.
+validation.incorrect - Lists incorrectly labelled words in the validation set.
+test.incorrect - Lists incorrectly labelled words in the test set.
 
 2.2 File Formats
 -----------------------------------------------
