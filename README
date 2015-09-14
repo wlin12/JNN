@@ -1,15 +1,221 @@
-This is a JAVA toolkit for building neural networks. You can build any architecture with it from scratch or use any prebuilt architectures (MLP, RNN, LSTM, BLSTM, Conv->Maxpool). 
+JNN (Java Neural Network Toolkit) - 2015-09-10
 
-Words can be treated as independent units, or can be composed using the C2W model presented in the following work:
+Original writer: Wang Ling
 
-@inproceedings{wang:2015,
- title={Finding Function in Form: Compositional Character Models for Open Vocabulary Word Representation},
- author={Wang Ling and Tiago Lu{\'\i}is and Lu{\'\i}is Marujo and R\'{a}mon Fernandez Astudillo and Silvio Amir and Chris Dyer and Alan W Black and Isabel Trancoso},
- Location = {Lisbon, Portugal},
- Publisher = {EMNLP},
- year={2015}
-}
+This package contains a Java Neural Network Toolkit with implementations of:
+-An Word Representation model allowing vectors to be generated as a word lookup table,a set of features, or/and the C2W model (words are representated by their sequence of characters)
+-An LSTM-based Language Model
+-An LSTM-based Part-Of-Speech-Tagger Model
 
-Documentation coming soon... 
+The system requires Java 1.8+ to be installed, and approximately 8-16 GB of memory depending on the size and complexity of the network.
 
-For questions just mail me (wanglin1122@gmail.com)
+0.1 QUICK START 
+-----------------------------------------------
+Examples for training a Part-of-speech tagger and language models can be found in scripts/run_pos.sh and scripts/run_lm.sh, respectively.
+These can be run with the following commands (make sure you current directory is jnn_lib/):
+sh scripts/run_pos.sh
+sh scripts/run_lm.sh
+
+These scripts download currently available data as samples, and serve as examples of how the code is to be run. 
+The POS tagger is trained on the Ark POS dataset found in https://code.google.com/p/ark-tweet-nlp/downloads/list . The language models are trained on subsets of wikipedia, which we make available at https://www.l2f.inesc-id.pt/~wlin/wiki.gz .
+
+1.1 LANGUAGE MODEL
+-----------------------------------------------
+
+Sample datasets can be downloaded by running:
+sh scripts/download_wikidata.sh
+
+The LSTM-based language model can be trained by calling:
+
+java -Xmx10g -cp jnn.jar:libs/* jnn.functions.nlp.app.lm.LSTMLanguageModel -batch_size 10 -iterations 1000000 -lr 0.1 -output_dir sample_lm_model -softmax_function word-5000 -test_file wiki/wiki.test.en -threads 8 -train_file wiki/wiki.train.en -validation_file wiki/wiki.dev.en -validation_interval 10000 -word_dim 50 -char_dim 50 -char_state_dim 150 -lm_state_dim 150 -word_features characters -nd4j_resource_dir nd4j_resources -update momentum
+
+This command will train a neural language model using the training file wiki/wiki.train.en, validating on wiki/wiki.val.en, and testing on wiki/wiki.test.en. 
+
+Arguments are described below:
+batch_size - number of sentences (lines) processed in each each mini-batch
+iterations - number of iterations the model is to be trained (each iterations processes one mini-batch)
+lr - learning rate
+output_dir - directory to save the model, write the statistics (perplexities), and scores for the test data
+word_features - type of word representation used (options described in 3)
+softmax_function - type of softmax unit used for predicting words (options described in 1.2)
+train_file - training text file 
+validation_file - validation text file 
+test_file - test text file
+validation_interval - number of mini-batches to be run before computing perplexities on the validation set
+word_dim - word vector dimension (In a lookup table, this will generate a vocab*word_dim table, while in the C2W model, the character LSTM states will be projected into a vector of size word_dim)
+char_dim - character vector dimension (Always uses a lookup table)
+char_state_dim - LSTM state and cell dimensions used to build lstm states
+lm_state - LSTM state and cell dimensions for the language model
+nd4j_resource_dir - ND4J configuration directories (simply point to nd4j_resources)
+threads - number of threads to be used (sentences in each mini-batch will be divided among threads)
+update - sgd method (regular, momentum or adagrad)
+
+The following files will be created in the directory specified by -output_dir:
+model.gz - The model is stored in this file every time the validation perplexity exceeds the previous highest value. If this file exists when the command is called, this model will be loaded and training will be carried out from this point. This way if something goes wrong during training (e.g. server crashes), training will resume at the last saved point.
+model.tmp.gz - A backup copy of hte model.gz file, this is kept so that if the script fails when model.gz is being written, it is not lost. Thus, if model.gz is incomplete, simply copy model.tmp.gz over it.
+rep.gz - The word representation model, this can be used in order to reuse the word representations trained on this task as initilization for other tasks.
+test.scores.gz - Once the model finishes training, the file specified by -test_file is trained and sentence level perplexities are computed and stored in this file. (to simply run a model on the test set, make sure the model.gz is created and set -iterations to 0)
+stats - Reports statistics during training. In this task, perplexities per iteration on the development set are reported.
+
+1.2 SOFTMAX functions
+-----------------------------------------------
+The most straight-forward way to predict each word as a softmax over the whole training vocabulary (set -softmax_function to word). However, the normalization over the whole vocabulary is expensive. One way around this problem is to prune the vocabulary by replacing less frequent words by an unknown token. This can be done by setting -softmax_function to word-*, where * is the number of words to consider. Thus, word-5000, will perform a softmax over the top 5000 words and replaces the rest of the words by an unknown token. 
+
+It is also possible to use Noise Constrastive Estimation by setting the -softmax_function parameter to word-nce. This allows parameters to be estimated for the whole vocabulary, while avoiding the normalization over the whole vocabulary at training time.
+
+2.1 Part-of-Speech Tagging
+-----------------------------------------------
+
+The LSTM-based Part-of-Speech Tagger can be trained by calling:
+
+java -Xmx10g -cp jnn.jar:libs/* jnn.functions.nlp.app.pos.PosTagger -lr 0.3 -batch_size 100 -validation_interval 10 -threads 8 -train_file twpos-data-v0.3/oct27.splits/oct27.train -validation_file twpos-data-v0.3/oct27.splits/oct27.dev -test_file twpos-data-v0.3/oct27.splits/oct27.test -input_format conll-0-1 -word_features characters -context_model blstm -iterations 1000 -output_dir /models/pos_model -sequence_activation 2 -word_dim 50 -char_dim 50 -char_state_dim 150  -context_state_dim 150 -update momentum -nd4j_resource_dir nd4j_resources/
+
+This command will train a POS tagger using the training file twpos-data-v0.3/oct27.splits/oct27.train, validating on twpos-data-v0.3/oct27.splits/oct27.dev, and testing on twpos-data-v0.3/oct27.splits/oct27.test. 
+
+Arguments are described below:tch_size - number of sentences (lines) processed in each each mini-batch
+iterations - number of iterations the model is to be trained (each iterations processes one mini-batch)
+lr - learning rate
+output_dir - directory to save the model, write the statistics (accuracies), and scores for the test data
+word_features - type of word representation used (options described in 3)
+train_file - training file
+validation_file - validation file
+test_file - test file
+input_format - file format (options described in 2.2)
+context_model - POS prediction model (options described in 2.3)
+word_dim - word vector dimension (In a lookup table, this will generate a vocab*word_dim table, while in the C2W model, the character LSTM states will be projected into a vector of size word_dim)
+char_dim - character vector dimension (Always uses a lookup table)
+char_state_dim - LSTM state and cell dimensions used to build lstm states
+lm_state - LSTM state and cell dimensions for the language model
+nd4j_resource_dir - ND4J configuration directories (simply point to nd4j_resources)
+threads - number of threads to be used (sentences in each mini-batch will be divided among threads)
+update - sgd method (regular, momentum or adagrad)
+
+2.2 File Formats
+-----------------------------------------------
+We allow 3 different formats. 
+1 - The Conll column format is displayed as follows:
+
+1       In      _       IN      IN      _       43      ADV     _       _
+2       an      _       DT      DT      _       5       NMOD    _       _
+3       Oct.    _       NN      NNP     _       5       TMP     _       _
+4       19      _       CD      CD      _       3       NMOD    _       _
+5       review  _       NN      NN      _       1       PMOD    _       _
+6       of      _       IN      IN      _       5       NMOD    _       _
+7       ``      _       ``      ``      _       9       P       _       _
+8       The     _       DT      DT      _       9       NMOD    _       _
+9       Misanthrope     _       NN      NN      _       6       PMOD    _       _
+10      ''      _       ''      ''      _       9       P       _       _
+11      at      _       IN      IN      _       9       NMOD    _       _
+12      Chicago _       NN      NNP     _       15      NMOD    _       _
+13      's      _       PO      POS     _       12      NMOD    _       _
+14      Goodman _       NN      NNP     _       15      NMOD    _       _
+15      Theatre _       NN      NNP     _       11      PMOD    _       _
+
+This format can be specified by setting -input_format as conll-*-+, where * is the column of the token (starting from 0) and + is the column of the POS tag. In the example above you probably wish to set -input_format as conll-1-4.
+
+2 - The parallel data format, where the tokens and tags are separated by " ||| ":
+In an Oct. 19 review of `` The Misanthrope '' at Chicago 's Goodman Theatre ||| IN DT NNP CD NN IN `` DT NN '' IN NNP POS NNP NNP
+
+This format can be specfied by setting -input_format as parallel.
+
+3 - The Stanford original format with chunking information is displayed as follows:
+
+If/IN
+[ you/PRP ]
+'d/MD really/RB rather/RB have/VB
+[ a/DT Buick/NNP ]
+,/, do/VB n't/RB leave/VB
+[ home/NN ]
+without/IN
+[ the/DT American/NNP Express/NNP card/NN ]
+./.
+
+This format can be specified by defining the -input_format as stanford.
+
+2-3 Part-Of-Speech tagging models
+-----------------------------------------------
+
+
+3-1 Word Representations Lookup Tables
+-----------------------------------------------
+In general, words are converted into K-dimensional vectors though a lookup table, where each individual word type is matched with an independent vector. This can be specified by setting the -word_features argument as "words". This can be generalized any discrete feature, for instance, if we wish to model words as their 3 letter prefix, we simply build a lookup table of all observed prefixes with size 3 and all words sharing the same 3 letter prefix will be associated with the same vector. In this view, the "words" feature can be seen as an identity feature, where no word types share the same vector. Finally, multiple features can be used simultanously by enumerating the desired features. For instance, setting -word_features to "words,prefix-3", will simultaneuously use the identity feature and the prefix feature with size 3. Below are the features that are available:
+
+word : lowercased word
+prefix-* : prefix of size * (e.g. setting * to 3 means prefix with size 3)
+suffix-* : suffix of size * (e.g. setting * to 3 means suffix with size 3)
+capitalization : binary feature that is 1 or 0 depending on whether the first letter is uppercased
+casing : ternary feature that is 2 if all letters are uppercased, 1 if the first letter is uppercased and 0 otherwise
+shape : replaces uppercased letters with X, lowercased letters with x and digits with d (e.g. John12 -> Xxxxdd)
+shape-no-repeat : same as shape, but removes repeated letters (e.g. John12 -> Xxd)
+
+Finally, it is common for unseen feature activations in the training set to be found in the development and test sets, such as out-of-vocabulary words or prefixes. If this happens an unknown feature is activated instead. During training, we stochastically replace singleton feature activations by this token with probability 0.5.
+
+3-2 C2W Model
+-----------------------------------------------
+
+An option to lookup tables is to compose the word representation from its characters. In our work, we use LSTMs to compose the K-dimensional vector for each word. We call this model C2W (character to word), and it can be used by setting -word_features to one of the following options:
+
+characters : LSTM composition for characters
+characters-lowercase : LSTM composition for lowercased characters
+
+Once again, it is possible to use the C2W model with lookup tables, for instance, setting the -word_features to word,suffix-3,character will use the word lookup table, a suffix lookup table and the C2W model. 
+
+It is also worth mentioning that if the same word occurs multiple times in the same mini-batch, it will only be composed once to save computation. Thus, it is generally advised to user larger mini-batches (more than 10 sentences) for faster computation. 
+
+For more information regarding the C2W model, check out our work at:
+http://arxiv.org/abs/1508.02096
+
+CONTENTS
+-----------------------------------------------
+README
+
+  This file.
+
+COPYING
+
+  License file
+
+jnn.jar
+stanford-postagger-YYYY-MM-DD.jar
+
+  This is a JAR file containing all classes in JNN and necessary to run the language models and taggers.
+
+src
+
+  A directory containing the Java 1.8 source code for JNN.
+
+THANKS
+-----------------------------------------------
+
+Thanks to the members of the Stanford Natural Language Processing Lab
+for great collaborative work on Java libraries for natural language
+processing.
+
+  http://nlp.stanford.edu/javanlp/
+
+LICENSE
+-----------------------------------------------
+
+The code provided by this package free and is distributed under the following license
+
+                         Wang Ling
+                         wanglin1122@gmail.com
+                         Copyright (c) 2015
+                         All Rights Reserved.
+
+Permission is hereby granted, free of charge, to use and distribute these items wiwithout restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of this work, and to permit persons to whom this work is furnished to do so, subject to the following conditions:
+1. The contents of this package must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Any modifications must be clearly marked as such.
+3. Original authors' names are not deleted.
+4. The authors' names are not used to endorse or promote products derived from this software without specific prior written permission.
+
+THE AUTHORS AND THE CONTRIBUTORS TO THIS WORK DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY NOR THE CONTRIBUTORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+CONTACT
+-----------------------------------------------
+For more information, bug reports, fixes, contact:
+    			
+			Wang Ling
+			wanglin1122@gmail.com
+			INESC-ID & Carnegie Mellon University
+			Lisbon, Portugal

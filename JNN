@@ -1,0 +1,15 @@
+This is a JAVA toolkit for building neural networks. You can build any architecture with it from scratch or use any prebuilt architectures (MLP, RNN, LSTM, BLSTM, Conv->Maxpool). 
+
+Words can be treated as independent units, or can be composed using the C2W model presented in the following work:
+
+@inproceedings{wang:2015,
+ title={Finding Function in Form: Compositional Character Models for Open Vocabulary Word Representation},
+ author={Wang Ling and Tiago Lu{\'\i}is and Lu{\'\i}is Marujo and R\'{a}mon Fernandez Astudillo and Silvio Amir and Chris Dyer and Alan W Black and Isabel Trancoso},
+ Location = {Lisbon, Portugal},
+ Publisher = {EMNLP},
+ year={2015}
+}
+
+Documentation coming soon... 
+
+For questions just mail me (wanglin1122@gmail.com)
