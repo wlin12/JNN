@@ -9,7 +9,7 @@ This package contains a Java Neural Network Toolkit with implementations of:
 
 The system requires Java 1.8+ to be installed, and approximately 8-16 GB of memory depending on the size and complexity of the network.
 
-0.1 QUICK START 
+0.1 Quick Start 
 -----------------------------------------------
 Examples for training a Part-of-speech tagger and language models can be found in scripts/run_pos.sh and scripts/run_lm.sh, respectively.
 These can be run with the following commands:
@@ -17,10 +17,10 @@ These can be run with the following commands:
 sh scripts/run_pos.sh
 sh scripts/run_lm.sh
 
-These scripts download currently available data as samples, and serve as examples of how the code is to be run. 
+These scripts download currently available data for both tasks, and serve as examples of how the code is to be run. 
 The POS tagger is trained on the Ark POS dataset found in https://code.google.com/p/ark-tweet-nlp/downloads/list . The language models are trained on subsets of wikipedia, which we make available at https://www.l2f.inesc-id.pt/~wlin/wiki.gz .
 
-1.1 LANGUAGE MODEL
+1.1 Language Modeling
 -----------------------------------------------
 
 Sample datasets can be downloaded by running:
@@ -60,7 +60,7 @@ rep.gz - The word representation model, this can be used in order to reuse the w
 test.scores.gz - Once the model finishes training, the file specified by -test_file is trained and sentence level perplexities are computed and stored in this file. (to simply run a model on the test set, make sure the model.gz is created and set -iterations to 0)
 stats - Reports statistics during training. In this task, perplexities on the development set are reported.
 
-1.2 SOFTMAX functions
+1.2 Softmax functions
 -----------------------------------------------
 The most straight-forward way to predict each word as a softmax over the whole training vocabulary (set -softmax_function to word). However, the normalization over the whole vocabulary is expensive. One way around this problem is to prune the vocabulary by replacing less frequent words by an unknown token. This can be done by setting -softmax_function to word-*, where * is the number of words to consider. Thus, word-5000, will perform a softmax over the top 5000 words and replaces the rest of the words by an unknown token. 
 
