@@ -54,7 +54,7 @@ update - sgd method (regular, momentum or adagrad)
 
 The following files will be created in the directory specified by -output_dir:
 
-model.gz - The model is stored in this file every time the validation perplexity exceeds the previous highest value. If this file exists when the command is called, this model will be loaded and training will be carried out from this point. This way if something goes wrong during training (e.g. server crashes), training will resume at the last saved point.
+model.gz - The model is stored in this file every time the validation perplexity improves over the previous best value. If this file exists when the command is called, this model will be loaded and training will be carried out from this point. This way if something goes wrong during training (e.g. server crashes), training will resume at the last saved point.
 model.tmp.gz - A backup copy of hte model.gz file, this is kept so that if the script fails when model.gz is being written, it is not lost. Thus, if model.gz is incomplete, simply copy model.tmp.gz over it.
 rep.gz - The word representation model, this can be used in order to reuse the word representations trained on this task as initilization for other tasks.
 test.scores.gz - Once the model finishes training, the file specified by -test_file is trained and sentence level perplexities are computed and stored in this file. (to simply run a model on the test set, make sure the model.gz is created and set -iterations to 0)
